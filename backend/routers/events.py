@@ -15,6 +15,6 @@ def list_events(
     events = db.exec(
         select(Event)
         .where(Event.session_id == session_id)
-        .order_by(Event.timestamp)
+        .order_by(Event.timestamp.desc())
     ).all()
     return [e.model_dump() for e in events]

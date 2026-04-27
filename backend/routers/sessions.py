@@ -33,7 +33,7 @@ def get_session(session_id: str, db: Session = Depends(get_session)) -> dict:
     events = db.exec(
         select(Event)
         .where(Event.session_id == session_id)
-        .order_by(Event.timestamp)
+        .order_by(Event.timestamp.desc())
     ).all()
 
     return {"session": sess.model_dump(), "events": [e.model_dump() for e in events]}
