@@ -5,6 +5,15 @@ import CostBadge from '../components/CostBadge.jsx'
 import FlagBadge from '../components/FlagBadge.jsx'
 import TraceTree from '../components/TraceTree.jsx'
 
+function Stat({ label, value, highlight }) {
+  return (
+    <div>
+      <div className="text-xs text-gray-600">{label}</div>
+      <div className={`text-sm font-medium ${highlight ? 'text-indigo-300' : 'text-gray-300'}`}>{value}</div>
+    </div>
+  )
+}
+
 export default function SessionDetail() {
   const { id } = useParams()
   const [data, setData] = useState(null)
@@ -20,7 +29,8 @@ export default function SessionDetail() {
   if (loading) return <div className="text-gray-500 text-sm">Loading...</div>
   if (!data) return <div className="text-red-400 text-sm">Session not found.</div>
 
-  const { session, events } = data
+  const { session, events: rawEvents } = data
+  const events = [...rawEvents].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
   const flagged = events.filter(e => e.flagged)
 
   return (
@@ -43,11 +53,17 @@ export default function SessionDetail() {
             }`}>{session.status}</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-sm text-gray-400">
-          <div><span className="text-gray-600">Events </span>{events.length}</div>
-          <div><span className="text-gray-600">Input tokens </span>{session.total_input_tokens.toLocaleString()}</div>
-          <div><span className="text-gray-600">Output tokens </span>{session.total_output_tokens.toLocaleString()}</div>
-          <div><span className="text-gray-600">Started </span>{new Date(session.started_at).toLocaleString()}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-sm">
+          <Stat label="Events"        value={events.length} />
+          <Stat label="Input tokens"  value={session.total_input_tokens.toLocaleString()} />
+          <Stat label="Output tokens" value={session.total_output_tokens.toLocaleString()} />
+          <Stat label="Total tokens"  value={(session.total_input_tokens + session.total_output_tokens).toLocaleString()} highlight />
+          <Stat label="Started"       value={new Date(session.started_at).toLocaleString()} />
+          {session.ended_at && (
+            <Stat label="Duration" value={
+              `${Math.round((new Date(session.ended_at) - new Date(session.started_at)) / 1000)}s`
+            } />
+          )}
         </div>
       </div>
 

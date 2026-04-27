@@ -24,8 +24,9 @@ export default function Dashboard() {
       .catch(() => setLoading(false))
   }, [])
 
-  const totalCost = sessions.reduce((s, x) => s + (x.total_cost_usd || 0), 0)
-  const totalFlags = sessions.reduce((s, x) => s + (x.flag_count || 0), 0)
+  const totalCost   = sessions.reduce((s, x) => s + (x.total_cost_usd || 0), 0)
+  const totalFlags  = sessions.reduce((s, x) => s + (x.flag_count || 0), 0)
+  const totalTokens = sessions.reduce((s, x) => s + (x.total_input_tokens || 0) + (x.total_output_tokens || 0), 0)
   const active = sessions.filter(s => s.status === 'active').length
 
   if (loading) return <div className="text-gray-500 text-sm">Loading...</div>
@@ -35,10 +36,11 @@ export default function Dashboard() {
       <h1 className="text-xl font-semibold mb-6">Dashboard</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Sessions" value={sessions.length} />
-        <StatCard label="Active" value={active} />
-        <StatCard label="Total Cost" value={`$${totalCost.toFixed(4)}`} />
-        <StatCard label="Flagged Events" value={totalFlags} warn={totalFlags > 0} />
+        <StatCard label="Total Sessions"  value={sessions.length} />
+        <StatCard label="Active"          value={active} />
+        <StatCard label="Total Tokens"    value={totalTokens.toLocaleString()} />
+        <StatCard label="Total Cost"      value={`$${totalCost.toFixed(4)}`} />
+        <StatCard label="Flagged Events"  value={totalFlags} warn={totalFlags > 0} />
       </div>
 
       <div className="rounded-lg border border-gray-800 overflow-hidden">
@@ -48,6 +50,7 @@ export default function Dashboard() {
               <th className="px-4 py-3 text-left">Project</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-right">Events</th>
+              <th className="px-4 py-3 text-right">Tokens</th>
               <th className="px-4 py-3 text-right">Cost</th>
               <th className="px-4 py-3 text-right">Flags</th>
               <th className="px-4 py-3 text-left">Started</th>
@@ -81,6 +84,9 @@ export default function Dashboard() {
                     }`}>{s.status}</span>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-300">{s.event_count}</td>
+                  <td className="px-4 py-3 text-right text-gray-400 text-xs font-mono">
+                    {((s.total_input_tokens || 0) + (s.total_output_tokens || 0)).toLocaleString()}
+                  </td>
                   <td className="px-4 py-3 text-right"><CostBadge cost={s.total_cost_usd} /></td>
                   <td className="px-4 py-3 text-right"><FlagBadge count={s.flag_count} /></td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(s.started_at).toLocaleString()}</td>

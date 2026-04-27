@@ -225,6 +225,11 @@ export default function EventRow({ event }) {
         {event.duration_ms > 0 && (
           <span className="text-gray-600 text-xs shrink-0">{event.duration_ms}ms</span>
         )}
+        {(event.input_tokens > 0 || event.output_tokens > 0) && (
+          <span className="text-gray-600 text-xs font-mono shrink-0">
+            {(event.input_tokens + event.output_tokens).toLocaleString()} tok
+          </span>
+        )}
         <CostBadge cost={event.cost_usd} />
         <span className="text-gray-600 text-xs w-20 text-right shrink-0">
           {new Date(event.timestamp).toLocaleTimeString()}

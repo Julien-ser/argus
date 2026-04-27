@@ -80,20 +80,35 @@ async def ingest(request: Request, db: Session = Depends(get_session)):
     tool_response = payload.get("tool_response")
     event_type = "tool_call" if hook == "PreToolUse" else "tool_result"
 
+    # Extract token usage — Claude Code may surface this in 'usage' or nested in tool_response
+    usage = (
+        payload.get("usage")
+        or payload.get("token_usage")
+        or (isinstance(tool_response, dict) and tool_response.get("usage"))
+        or {}
+    )
+    input_tokens  = int(usage.get("input_tokens", 0))
+    output_tokens = int(usage.get("output_tokens", 0))
+    # Sonnet pricing as default: $3/MTok input, $15/MTok output
+    cost = input_tokens * 3e-6 + output_tokens * 15e-6
+
     event = Event(
         session_id=session_id,
         type=event_type,
         tool_name=payload.get("tool_name"),
         tool_input=json.dumps(tool_input) if tool_input is not None else None,
         tool_output=json.dumps(tool_response) if tool_response is not None else None,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=round(cost, 6),
     )
 
     event.flagged, event.flag_reason = _evaluate_flags(event, sess)
     db.add(event)
 
-    sess.total_input_tokens += event.input_tokens
-    sess.total_output_tokens += event.output_tokens
-    sess.total_cost_usd += event.cost_usd
+    sess.total_input_tokens += input_tokens
+    sess.total_output_tokens += output_tokens
+    sess.total_cost_usd += round(cost, 6)
     db.add(sess)
 
     db.commit()
