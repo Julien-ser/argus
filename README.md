@@ -1,6 +1,14 @@
 # Argus
 
-Local-first observability for Claude Code agentic sessions. Every tool call, bash command, file write, and subagent spawn — captured, stored, and visualized in real time.
+## What is this?
+
+You're using Claude Code to help build your project. It works fast, solves things you'd spend hours on, and drops finished code into your repo. But here's the honest question: **do you actually know what it did?** What files did it touch? What commands did it run? How much did it cost? If something went wrong, could you trace back exactly where?
+
+Argus is a dashboard that answers these questions. Every time your AI agent takes an action — reads a file, writes code, runs bash, spawns a subagent — Argus captures it, stores it, and shows it to you in a live trace tree. You get a clear timeline of what happened, when it happened, and what it cost. You also get instant alerts on anything suspicious (like a command trying to `rm -rf` your drive, or a file being written outside your project).
+
+It's local-first — your data never leaves your machine. No cloud uploads. No sending your code to some observability startup. Just a lightweight SQLite database on your computer and a React dashboard you visit in your browser.
+
+Argus is built for developers using Claude Code who want to know exactly what their AI did, why, and what it cost.
 
 ## Why
 
