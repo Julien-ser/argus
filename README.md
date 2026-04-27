@@ -16,26 +16,37 @@ Claude Code runs on your machine, touches your files, and executes commands. Exi
 
 ## How it works
 
-```
-Claude Code session
-       │
-       │  PreToolUse / PostToolUse / Stop hooks
-       ▼
-  hooks/post_tool.sh  ──────────────────────────►  POST /ingest
-       (stdin → JSON)                               (FastAPI, :7777)
-                                                         │
-                                                    flag rules
-                                                         │
-                                                         ▼
-                                                    SQLite (argus.db)
-                                                         │
-                                              ┌──────────┴──────────┐
-                                              │                     │
-                                         GET /sessions         GET /flags
-                                         GET /events                │
-                                              │                     │
-                                              ▼                     ▼
-                                       React frontend (:5173)
+```mermaid
+flowchart TD
+    CC["Claude Code session"]
+
+    subgraph hooks["Hooks (PreToolUse · PostToolUse · Stop)"]
+        H["curl stdin → POST /ingest"]
+    end
+
+    subgraph backend["FastAPI backend :7777"]
+        IN["POST /ingest"]
+        FL["Flag rules evaluator"]
+        DB[("SQLite\nargus.db")]
+        TR["Transcript parser\n(token counts on Stop)"]
+    end
+
+    subgraph frontend["React frontend :3000"]
+        DASH["Dashboard\n/"]
+        SESS["Session detail\n/sessions/:id"]
+        FLAGS["Flags feed\n/flags"]
+    end
+
+    CC -->|"tool event JSON"| H
+    H --> IN
+    IN --> FL
+    FL --> DB
+    CC -->|"Stop hook"| TR
+    TR -->|"update token totals"| DB
+
+    DB -->|"GET /sessions"| DASH
+    DB -->|"GET /sessions/:id"| SESS
+    DB -->|"GET /flags"| FLAGS
 ```
 
 ## Architecture
