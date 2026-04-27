@@ -3,7 +3,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Flags from './pages/Flags.jsx'
 import SessionDetail from './pages/SessionDetail.jsx'
 
-export const API = 'http://localhost:7777'
+export const API = ''
 
 export default function App() {
   return (
