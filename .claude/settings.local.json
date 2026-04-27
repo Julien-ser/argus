@@ -25,7 +25,8 @@
       "Bash(netstat -ano)",
       "Bash(taskkill *)",
       "Read(//c/Users/a1/AppData/Roaming/Claude//**)",
-      "Read(//c/Users/a1/AppData/Local/**)"
+      "Read(//c/Users/a1/AppData/Local/**)",
+      "Bash(python *)"
     ]
   }
 }
