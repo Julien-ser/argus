@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from database import get_session
 from models import Event, Session as SessionModel
+from transcript import find_transcript, sum_transcript, cost_from_usage
 
 router = APIRouter()
 
@@ -67,30 +68,26 @@ async def ingest(request: Request, db: Session = Depends(get_session)):
         db.commit()
         db.refresh(sess)
 
-    # Stop hook — mark session closed
+    # Stop hook — parse transcript for accurate token totals then close session
     if hook == "Stop" or "stop_reason" in payload:
         sess.ended_at = datetime.utcnow()
         sess.status = payload.get("stop_reason", "completed")
+
+        transcript_path = payload.get("transcript_path") or find_transcript(sess.project_path, session_id)
+        if transcript_path:
+            usage = sum_transcript(transcript_path)
+            sess.total_input_tokens  = usage["input_tokens"]
+            sess.total_output_tokens = usage["output_tokens"]
+            sess.total_cost_usd      = cost_from_usage(usage)
+
         db.add(sess)
         db.commit()
         return {"ok": True}
 
     # Build event
-    tool_input = payload.get("tool_input")
+    tool_input    = payload.get("tool_input")
     tool_response = payload.get("tool_response")
-    event_type = "tool_call" if hook == "PreToolUse" else "tool_result"
-
-    # Extract token usage — Claude Code may surface this in 'usage' or nested in tool_response
-    usage = (
-        payload.get("usage")
-        or payload.get("token_usage")
-        or (isinstance(tool_response, dict) and tool_response.get("usage"))
-        or {}
-    )
-    input_tokens  = int(usage.get("input_tokens", 0))
-    output_tokens = int(usage.get("output_tokens", 0))
-    # Sonnet pricing as default: $3/MTok input, $15/MTok output
-    cost = input_tokens * 3e-6 + output_tokens * 15e-6
+    event_type    = "tool_call" if hook == "PreToolUse" else "tool_result"
 
     event = Event(
         session_id=session_id,
@@ -98,18 +95,10 @@ async def ingest(request: Request, db: Session = Depends(get_session)):
         tool_name=payload.get("tool_name"),
         tool_input=json.dumps(tool_input) if tool_input is not None else None,
         tool_output=json.dumps(tool_response) if tool_response is not None else None,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        cost_usd=round(cost, 6),
     )
 
     event.flagged, event.flag_reason = _evaluate_flags(event, sess)
     db.add(event)
-
-    sess.total_input_tokens += input_tokens
-    sess.total_output_tokens += output_tokens
-    sess.total_cost_usd += round(cost, 6)
     db.add(sess)
-
     db.commit()
     return {"ok": True, "event_id": event.id}
