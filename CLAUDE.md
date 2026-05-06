@@ -49,11 +49,13 @@ There is no test suite yet. The SQLite database is at `argus.db` in the project 
 
 - `backend/main.py` — FastAPI app, mounts routers, CORS config
 - `backend/models.py` — SQLModel `Session` and `Event` table definitions
-- `backend/database.py` — SQLite engine init, `get_session` dependency
+- `backend/database.py` — SQLite engine init, `get_session` dependency, runs column migrations on startup
 - `backend/ingest.py` — `POST /ingest` handler + all flag rule logic
-- `backend/routers/sessions.py` — `GET /sessions`, `GET /sessions/{id}`
+- `backend/transcript.py` — reads Claude Code JSONL transcripts to derive accurate token counts and cost; used by `ingest.py` on Stop events and by the sync-tokens endpoint
+- `backend/routers/sessions.py` — `GET /sessions`, `GET /sessions/{id}`, `POST /sessions/{id}/sync-tokens`
 - `backend/routers/events.py` — `GET /events?session_id=`
 - `backend/routers/flags.py` — `GET /flags`
+- `backend/routers/analytics.py` — `GET /analytics` (top-N breakdowns by tool, hook, agent type, skill, bash command)
 
 ### Data model
 
@@ -72,9 +74,13 @@ parent_session_id: str | None   # set for subagent sessions
 ```
 id: str (uuid)
 session_id: str (FK → Session)
-type: tool_call | tool_result | agent_message | subagent_spawn | compaction | error
+type: tool_call | tool_result | subagent_spawn | compaction | error
+hook_event_name: str | None   # PreToolUse | PostToolUse | Stop
 tool_name: str | None
 tool_input / tool_output: json | None
+agent_type: str | None        # set when tool_name == "Agent"
+skill_name: str | None        # set when tool_name == "Skill"
+command: str | None           # first token when tool_name == "Bash"
 input_tokens / output_tokens: int
 cost_usd: float
 duration_ms: int
@@ -86,32 +92,37 @@ timestamp: datetime
 ### Flag rules (evaluated in `ingest.py` on every event)
 
 - Bash input contains `sudo`, `rm -rf`, `curl | bash`, or `chmod 777`
-- Write tool path is outside the session's `project_path`
+- Write or Edit tool path is outside the session's `project_path`
 - Subagent spawned with no `parent_session_id`
 - Single event `cost_usd > 0.10`
 - Session `total_cost_usd > 1.00`
 
 ### Frontend pages
 
-- `/` (Dashboard) — session list with per-session cost/event/flag counts; global weekly stats
+- `/` (Dashboard) — session list with per-session cost/event/flag counts; summary stat cards (total sessions, active, total tokens, total cost, flagged events)
 - `/sessions/:id` (SessionDetail) — collapsible trace tree (agent → subagents → tool calls) + chronological event timeline; click any row to expand full tool input/output JSON
 - `/flags` — all flagged events across sessions with severity (info / warning / critical)
+- `/analytics` — Usage Analytics: horizontal bar charts for top tools, hooks fired, agent types spawned, skills invoked, and top bash commands
 
 ### Hook registration
 
-Hooks live in `hooks/` and must be registered in the user's `~/.claude/settings.json`:
+Hooks live in `hooks/` as Python scripts (`pre_tool.py`, `post_tool.py`, `stop.py`). The installer scripts (`install.sh` for Unix/Mac, `install.ps1` for Windows) copy them to `~/.argus/hooks/` and merge the hook entries into `~/.claude/settings.json` automatically.
+
+On Unix/Mac the installer prefers bash wrapper scripts if available, falling back to `python3`. On Windows it always uses `python3 <path>.py`.
+
+After running the installer the settings will contain entries like:
 
 ```json
 {
   "hooks": {
-    "PreToolUse":  [{ "matcher": "*", "hooks": [{ "type": "command", "command": "~/.argus/hooks/pre_tool.sh"  }] }],
-    "PostToolUse": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "~/.argus/hooks/post_tool.sh" }] }],
-    "Stop":        [{ "matcher": "*", "hooks": [{ "type": "command", "command": "~/.argus/hooks/stop.sh"      }] }]
+    "PreToolUse":  [{ "matcher": "*", "hooks": [{ "type": "command", "command": "python3 ~/.argus/hooks/pre_tool.py"  }] }],
+    "PostToolUse": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "python3 ~/.argus/hooks/post_tool.py" }] }],
+    "Stop":        [{ "matcher": "*", "hooks": [{ "type": "command", "command": "python3 ~/.argus/hooks/stop.py"      }] }]
   }
 }
 ```
 
-Each hook reads the Claude Code event JSON from stdin and POSTs it to `http://localhost:7777/ingest`.
+Each hook reads the Claude Code event JSON from stdin and POSTs it to `http://localhost:7777/ingest`. The hooks use only the Python standard library (`urllib.request`) so no extra dependencies are required.
 
 ## Out of scope for POC
 

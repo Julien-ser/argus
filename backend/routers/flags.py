@@ -9,6 +9,11 @@ router = APIRouter(prefix="/flags", tags=["flags"])
 
 @router.get("")
 def list_flags(db: Session = Depends(get_session)) -> list[dict]:
+    """Return all flagged events across all sessions, newest first.
+
+    Each entry includes the event fields plus project_path and session_status
+    from the parent session.
+    """
     flagged = db.exec(
         select(Event).where(Event.flagged == True).order_by(Event.timestamp.desc())
     ).all()

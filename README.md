@@ -31,10 +31,11 @@ flowchart TD
         TR["Transcript parser\n(token counts on Stop)"]
     end
 
-    subgraph frontend["React frontend :3000"]
+    subgraph frontend["React frontend :5173"]
         DASH["Dashboard\n/"]
         SESS["Session detail\n/sessions/:id"]
         FLAGS["Flags feed\n/flags"]
+        ANA["Analytics\n/analytics"]
     end
 
     CC -->|"tool event JSON"| H
@@ -47,6 +48,7 @@ flowchart TD
     DB -->|"GET /sessions"| DASH
     DB -->|"GET /sessions/:id"| SESS
     DB -->|"GET /flags"| FLAGS
+    DB -->|"GET /analytics"| ANA
 ```
 
 ## Architecture
@@ -89,9 +91,10 @@ Event
 ### Frontend pages
 
 ```
-/                   Dashboard — session list, weekly cost, most-used tools
+/                   Dashboard — session list, summary stats (cost, tokens, flags)
 /sessions/:id       Trace tree (agent → subagents → tool calls) + event timeline
 /flags              Security feed — all flagged events with reason and severity
+/analytics          Usage Analytics — bar charts for top tools, hooks, agents, skills, bash commands
 ```
 
 ## Stack
