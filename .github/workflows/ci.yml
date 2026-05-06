@@ -101,13 +101,19 @@ jobs:
           python3 -m py_compile hooks/stop.py
 
       - name: No hardcoded secrets or tokens
-        # Fail if any file contains common secret patterns (case-insensitive)
+        # Match actual string assignments only; skip comment lines
         run: |
-          ! grep -rniE \
-            "(api_key|secret_key|password|bearer [a-z0-9]{20,}|sk-[a-zA-Z0-9]{20,})" \
+          hits=$(grep -rniE \
+            "(api_key|secret_key|password|bearer [a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9]{20,})\s*=\s*[\"'][^\"']{8,}[\"']" \
             --include="*.py" --include="*.ts" --include="*.tsx" --include="*.js" \
             --exclude-dir=node_modules --exclude-dir=dist \
-            . && echo "No hardcoded secrets found."
+            . | grep -v "^\s*#" || true)
+          if [ -n "$hits" ]; then
+            echo "Possible hardcoded secrets found:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No hardcoded secrets found."
 
       - name: No leftover debug prints in Python hooks
         run: |

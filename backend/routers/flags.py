@@ -15,7 +15,7 @@ def list_flags(db: Session = Depends(get_session)) -> list[dict]:
     from the parent session.
     """
     flagged = db.exec(
-        select(Event).where(Event.flagged == True).order_by(Event.timestamp.desc())
+        select(Event).where(Event.flagged).order_by(Event.timestamp.desc())
     ).all()
 
     result = []
