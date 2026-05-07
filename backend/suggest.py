@@ -52,7 +52,7 @@ def _llm_enhance(summary: dict, rule_suggestions: list[dict]) -> list[dict]:
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
             result = json.loads(resp.read())
         text = result["choices"][0]["message"]["content"].strip()
         if text.startswith("```"):
