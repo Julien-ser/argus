@@ -7,3 +7,4 @@ dist/
 .vite/
 .claude/settings.local.json
 BUSINESS_PLAN.docx
+BUSINESS_PLAN.md
