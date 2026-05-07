@@ -1,38 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { API } from '../App.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
 import CostBadge from '../components/CostBadge.jsx'
 import FlagBadge from '../components/FlagBadge.jsx'
+import StatusBadge from '../components/StatusBadge.jsx'
 
-const SKILL_COLORS = [
-  'bg-indigo-900 text-indigo-300',
-  'bg-purple-900 text-purple-300',
-  'bg-pink-900 text-pink-300',
-  'bg-blue-900 text-blue-300',
-  'bg-emerald-900 text-emerald-300',
-  'bg-amber-900 text-amber-300',
-]
-
-function skillColor(name) {
-  let h = 0
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff
-  return SKILL_COLORS[Math.abs(h) % SKILL_COLORS.length]
+function SkillPill({ name }) {
+  return (
+    <span className="text-[11px] px-1.5 py-0.5 rounded font-mono bg-gray-800 text-gray-400">
+      {name}
+    </span>
+  )
 }
 
 const PRIORITY_STYLES = {
-  high:   { badge: 'bg-red-900 text-red-300',    border: 'border-l-red-500' },
-  medium: { badge: 'bg-yellow-900 text-yellow-300', border: 'border-l-yellow-500' },
-  low:    { badge: 'bg-blue-900 text-blue-300',   border: 'border-l-blue-500' },
-  info:   { badge: 'bg-gray-800 text-gray-400',   border: 'border-l-gray-600' },
+  high:   { badge: 'text-red-400',   border: 'border-l-red-500' },
+  medium: { badge: 'text-amber-400', border: 'border-l-amber-500' },
+  low:    { badge: 'text-blue-400',  border: 'border-l-blue-500' },
+  info:   { badge: 'text-gray-500',  border: 'border-l-gray-700' },
 }
-
-const TYPE_ICONS = { hook: '⚡', skill: '🎯', agent: '🤖', config: '⚙️' }
+const TYPE_ICONS = { hook: '⚡', skill: '🎯', agent: '·', config: '⚙' }
 
 const OBS_STYLES = {
-  violation: 'border-l-red-500 bg-red-950',
-  warning:   'border-l-yellow-500 bg-yellow-950',
-  info:      'border-l-blue-500 bg-blue-950',
+  violation: 'border-l-red-500',
+  warning:   'border-l-amber-500',
+  info:      'border-l-blue-500',
 }
 
 // ── Suggestions tab ──────────────────────────────────────────────────────────
@@ -40,28 +33,28 @@ function SuggestionCard({ s }) {
   const [open, setOpen] = useState(false)
   const ps = PRIORITY_STYLES[s.priority] || PRIORITY_STYLES.info
   return (
-    <div className={`border border-gray-800 border-l-4 ${ps.border} rounded-lg p-4 bg-gray-900`}>
+    <div className={`border border-gray-800 border-l-4 ${ps.border} rounded-lg p-4 bg-gray-900/60`}>
       <div className="flex items-start gap-3">
-        <span className="text-lg shrink-0">{TYPE_ICONS[s.type] || '•'}</span>
+        <span className="text-gray-600 shrink-0">{TYPE_ICONS[s.type] || '·'}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className={`text-xs px-1.5 py-0.5 rounded font-mono uppercase ${ps.badge}`}>
+            <span className={`text-[11px] font-medium uppercase tracking-wide ${ps.badge}`}>
               {s.priority}
             </span>
-            <span className="text-xs text-gray-500 uppercase tracking-wide">{s.type}</span>
+            <span className="text-[11px] text-gray-600">{s.type}</span>
           </div>
-          <div className="text-sm text-gray-400 mb-1 font-mono">{s.pattern}</div>
-          <div className="text-sm text-gray-200">{s.suggestion}</div>
+          <div className="text-xs text-gray-500 font-mono mb-1">{s.pattern}</div>
+          <div className="text-sm text-gray-300">{s.suggestion}</div>
           {s.config_snippet && (
             <button
               onClick={() => setOpen(o => !o)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 mt-2"
+              className="text-xs text-indigo-400 hover:text-indigo-300 mt-2 transition-colors"
             >
               {open ? '▾ Hide snippet' : '▸ Show snippet'}
             </button>
           )}
           {open && s.config_snippet && (
-            <pre className="mt-2 text-xs text-gray-300 bg-gray-950 rounded p-3 overflow-x-auto whitespace-pre-wrap border border-gray-800">
+            <pre className="mt-2 text-xs text-gray-400 bg-gray-950 rounded p-3 overflow-x-auto whitespace-pre-wrap border border-gray-800">
               {s.config_snippet}
             </pre>
           )}
@@ -75,9 +68,9 @@ function SuggestionCard({ s }) {
 function ObservationRow({ obs }) {
   const cls = OBS_STYLES[obs.level] || OBS_STYLES.info
   return (
-    <div className={`border border-gray-800 border-l-4 ${cls} rounded p-3 mb-2`}>
+    <div className={`border border-gray-800 border-l-4 ${cls} rounded p-3 mb-2 bg-gray-900/60`}>
       <div className="text-sm font-medium text-gray-200">{obs.title}</div>
-      <div className="text-xs text-gray-400 mt-0.5">{obs.detail}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{obs.detail}</div>
     </div>
   )
 }
@@ -94,44 +87,40 @@ function ClaudeConfigTab({ projectPath }) {
       .catch(() => setLoading(false))
   }, [projectPath])
 
-  if (loading) return <div className="text-gray-500 text-sm py-4">Loading…</div>
+  if (loading) return <div className="text-gray-600 text-sm py-4">Loading…</div>
   if (!data) return <div className="text-red-400 text-sm">Failed to load config.</div>
 
   const { observations, hook_summary, claude_md, project_commands, global_commands, global_settings_summary } = data
 
   return (
-    <div className="space-y-6">
-      {/* Observations */}
+    <div className="space-y-8">
       {observations.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-3">
             Observations
           </h3>
           {observations.map((o, i) => <ObservationRow key={i} obs={o} />)}
         </section>
       )}
 
-      {/* Hook summary */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-          Hooks
-        </h3>
+        <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-3">Hooks</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-900 border border-gray-800 rounded p-3">
-            <div className="text-xs text-gray-500 mb-2">Registered</div>
+          <div>
+            <div className="text-[11px] text-gray-600 mb-2">Registered</div>
             {hook_summary.registered.length === 0
-              ? <div className="text-xs text-gray-600 italic">None</div>
+              ? <div className="text-xs text-gray-700 italic">None</div>
               : hook_summary.registered.map(h => (
                   <div key={h} className="text-xs font-mono text-green-400">{h}</div>
                 ))
             }
           </div>
-          <div className="bg-gray-900 border border-gray-800 rounded p-3">
-            <div className="text-xs text-gray-500 mb-2">Fired in sessions</div>
+          <div>
+            <div className="text-[11px] text-gray-600 mb-2">Fired in sessions</div>
             {hook_summary.fired.length === 0
-              ? <div className="text-xs text-gray-600 italic">None</div>
+              ? <div className="text-xs text-gray-700 italic">None</div>
               : hook_summary.fired.map(h => (
-                  <div key={h} className={`text-xs font-mono ${hook_summary.unregistered_fires.includes(h) ? 'text-yellow-400' : 'text-gray-300'}`}>
+                  <div key={h} className={`text-xs font-mono ${hook_summary.unregistered_fires.includes(h) ? 'text-amber-400' : 'text-gray-400'}`}>
                     {h}{hook_summary.unregistered_fires.includes(h) ? ' ⚠' : ''}
                   </div>
                 ))
@@ -140,52 +129,46 @@ function ClaudeConfigTab({ projectPath }) {
         </div>
       </section>
 
-      {/* Global settings summary */}
       {global_settings_summary && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Global Settings (~/.claude/settings.json)
+          <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-3">
+            Global settings
           </h3>
-          <div className="bg-gray-900 border border-gray-800 rounded p-3 text-xs font-mono space-y-1">
-            <div><span className="text-gray-500">model: </span><span className="text-gray-200">{global_settings_summary.model || '—'}</span></div>
-            <div><span className="text-gray-500">theme: </span><span className="text-gray-200">{global_settings_summary.theme || '—'}</span></div>
-            <div><span className="text-gray-500">permissions.allow count: </span><span className="text-gray-200">{global_settings_summary.permissions_allow_count}</span></div>
-            <div><span className="text-gray-500">hooks registered: </span><span className="text-gray-200">{global_settings_summary.hooks_registered.join(', ') || '—'}</span></div>
+          <div className="text-xs font-mono space-y-1 text-gray-400">
+            <div><span className="text-gray-600">model: </span>{global_settings_summary.model || '—'}</div>
+            <div><span className="text-gray-600">theme: </span>{global_settings_summary.theme || '—'}</div>
+            <div><span className="text-gray-600">permissions.allow: </span>{global_settings_summary.permissions_allow_count}</div>
+            <div><span className="text-gray-600">hooks: </span>{global_settings_summary.hooks_registered.join(', ') || '—'}</div>
           </div>
         </section>
       )}
 
-      {/* Custom commands */}
       {(project_commands.length > 0 || global_commands.length > 0) && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Custom Commands
+          <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-3">
+            Custom commands
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-gray-600 mb-2">Project (.claude/commands/)</div>
+              <div className="text-[11px] text-gray-600 mb-2">Project (.claude/commands/)</div>
               {project_commands.length === 0
                 ? <div className="text-xs text-gray-700 italic">None</div>
                 : project_commands.map(cmd => (
                     <div key={cmd.name} className="mb-2">
-                      <div className="text-xs font-mono text-indigo-300">/{cmd.name}</div>
-                      {cmd.preview && (
-                        <div className="text-xs text-gray-600 truncate">{cmd.preview}</div>
-                      )}
+                      <div className="text-xs font-mono text-indigo-400">/{cmd.name}</div>
+                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate">{cmd.preview}</div>}
                     </div>
                   ))
               }
             </div>
             <div>
-              <div className="text-xs text-gray-600 mb-2">Global (~/.claude/commands/)</div>
+              <div className="text-[11px] text-gray-600 mb-2">Global (~/.claude/commands/)</div>
               {global_commands.length === 0
                 ? <div className="text-xs text-gray-700 italic">None</div>
                 : global_commands.map(cmd => (
                     <div key={cmd.name} className="mb-2">
-                      <div className="text-xs font-mono text-purple-300">/{cmd.name}</div>
-                      {cmd.preview && (
-                        <div className="text-xs text-gray-600 truncate">{cmd.preview}</div>
-                      )}
+                      <div className="text-xs font-mono text-indigo-400">/{cmd.name}</div>
+                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate">{cmd.preview}</div>}
                     </div>
                   ))
               }
@@ -194,21 +177,16 @@ function ClaudeConfigTab({ projectPath }) {
         </section>
       )}
 
-      {/* CLAUDE.md viewer */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-          CLAUDE.md
-        </h3>
+        <h3 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-3">CLAUDE.md</h3>
         {claude_md
           ? (
-            <pre className="text-xs text-gray-300 bg-gray-900 border border-gray-800 rounded p-4 overflow-auto max-h-96 whitespace-pre-wrap">
+            <pre className="text-xs text-gray-400 bg-gray-900/60 border border-gray-800 rounded p-4 overflow-auto max-h-96 whitespace-pre-wrap">
               {claude_md}
             </pre>
           )
           : (
-            <div className="text-xs text-gray-600 italic bg-gray-900 border border-gray-800 rounded p-4">
-              No CLAUDE.md found in {projectPath}
-            </div>
+            <p className="text-xs text-gray-700 italic">No CLAUDE.md found in {projectPath}</p>
           )
         }
       </section>
@@ -229,27 +207,27 @@ function SuggestionsTab({ projectPath }) {
       .catch(() => setLoading(false))
   }, [projectPath])
 
-  if (loading) return <div className="text-gray-500 text-sm py-4">Analysing patterns…</div>
+  if (loading) return <div className="text-gray-600 text-sm py-4">Analysing patterns…</div>
   if (!suggestions) return <div className="text-red-400 text-sm">Failed to load suggestions.</div>
 
   if (suggestions.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-600">
-        <div className="text-3xl mb-2">✓</div>
-        <div>No optimization patterns detected yet.</div>
-        <div className="text-xs mt-1">Suggestions appear after a few sessions of data.</div>
-      </div>
+      <p className="text-gray-600 text-sm py-12 text-center">
+        No optimization patterns detected yet. Suggestions appear after a few sessions.
+      </p>
     )
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {suggestions.map((s, i) => <SuggestionCard key={i} s={s} />)}
     </div>
   )
 }
 
 // ── Sessions tab ─────────────────────────────────────────────────────────────
+const TH = 'pb-3 text-[11px] font-medium text-gray-500 uppercase tracking-wide'
+
 function SessionsTab({ sessions, projectPath }) {
   const [checked, setChecked] = useState(new Set())
 
@@ -267,46 +245,45 @@ function SessionsTab({ sessions, projectPath }) {
 
   return (
     <div>
-      {compareUrl && (
-        <div className="flex justify-end mb-3">
+      <div className="flex items-center justify-between mb-4 min-h-[28px]">
+        {compareUrl ? (
           <Link
             to={compareUrl}
-            className="text-sm px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded transition-colors"
+            className="text-sm px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors"
           >
-            Compare 2 selected →
+            Compare selected →
           </Link>
-        </div>
-      )}
-      {checked.size === 1 && (
-        <div className="text-xs text-gray-500 text-right mb-3">Select one more session to compare</div>
-      )}
+        ) : checked.size === 1 ? (
+          <span className="text-xs text-gray-600">Select one more session to compare</span>
+        ) : <div />}
+      </div>
 
-      <div className="rounded-lg border border-gray-800 overflow-hidden">
+      <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-900 text-xs uppercase tracking-wide text-gray-400">
-            <tr>
-              <th className="px-3 py-3 w-8"></th>
-              <th className="px-4 py-3 text-left">Session</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-right">Trust</th>
-              <th className="px-4 py-3 text-right">Cost</th>
-              <th className="px-4 py-3 text-right">Events</th>
-              <th className="px-4 py-3 text-right">Flags</th>
-              <th className="px-4 py-3 text-left">Skills</th>
-              <th className="px-4 py-3 text-left">Started</th>
+          <thead>
+            <tr className="border-b border-gray-800">
+              <th className="pb-3 w-8" />
+              <th className={`${TH} text-left`}>Session</th>
+              <th className={`${TH} text-left`}>Status</th>
+              <th className={`${TH} text-right`}>Trust</th>
+              <th className={`${TH} text-right`}>Cost</th>
+              <th className={`${TH} text-right`}>Events</th>
+              <th className={`${TH} text-right`}>Flags</th>
+              <th className={`${TH} text-left pl-4`}>Skills</th>
+              <th className={`${TH} text-left`}>Started</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody>
             {sessions.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-600 text-sm">
+                <td colSpan={9} className="py-10 text-center text-gray-600 text-sm">
                   No sessions for this project yet.
                 </td>
               </tr>
             )}
             {sessions.map(s => (
-              <tr key={s.id} className="hover:bg-gray-900 transition-colors">
-                <td className="px-3 py-3">
+              <tr key={s.id} className="border-b border-gray-800/50 hover:bg-gray-900/50 transition-colors">
+                <td className="py-3">
                   <input
                     type="checkbox"
                     checked={checked.has(s.id)}
@@ -315,32 +292,26 @@ function SessionsTab({ sessions, projectPath }) {
                     className="accent-indigo-500 cursor-pointer"
                   />
                 </td>
-                <td className="px-4 py-3">
+                <td className="py-3 pr-4">
                   <Link to={`/sessions/${s.id}`} className="text-indigo-400 hover:text-indigo-300 font-mono text-xs">
                     {s.id.slice(0, 8)}…
                   </Link>
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    s.status === 'active' ? 'bg-green-900 text-green-300' :
-                    s.status === 'completed' ? 'bg-gray-800 text-gray-400' :
-                    'bg-yellow-900 text-yellow-300'
-                  }`}>{s.status}</span>
+                <td className="py-3 pr-4">
+                  <StatusBadge status={s.status} />
                 </td>
-                <td className="px-4 py-3 text-right"><TrustBadge score={s.trust_score} /></td>
-                <td className="px-4 py-3 text-right"><CostBadge cost={s.total_cost_usd} /></td>
-                <td className="px-4 py-3 text-right text-gray-400">{s.event_count}</td>
-                <td className="px-4 py-3 text-right"><FlagBadge count={s.flag_count} /></td>
-                <td className="px-4 py-3">
+                <td className="py-3 text-right"><TrustBadge score={s.trust_score} /></td>
+                <td className="py-3 text-right"><CostBadge cost={s.total_cost_usd} /></td>
+                <td className="py-3 text-right text-gray-400 tabular-nums">{s.event_count}</td>
+                <td className="py-3 text-right"><FlagBadge count={s.flag_count} /></td>
+                <td className="py-3 pl-4">
                   <div className="flex flex-wrap gap-1">
                     {(s.skill_counts || []).slice(0, 3).map(sk => (
-                      <span key={sk.name} className={`text-xs px-1 py-0.5 rounded font-mono ${skillColor(sk.name)}`}>
-                        {sk.name}
-                      </span>
+                      <SkillPill key={sk.name} name={sk.name} />
                     ))}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="py-3 text-gray-600 text-[11px] font-mono">
                   {new Date(s.started_at).toLocaleString()}
                 </td>
               </tr>
@@ -375,41 +346,38 @@ export default function ProjectDetail() {
   }, [projectPath])
 
   if (!projectPath) return <div className="text-red-400 text-sm">No project path specified.</div>
-  if (loading) return <div className="text-gray-500 text-sm">Loading…</div>
+  if (loading) return <div className="text-gray-600 text-sm py-8">Loading…</div>
 
-  const totalCost = sessions.reduce((s, x) => s + (x.total_cost_usd || 0), 0)
+  const totalCost  = sessions.reduce((s, x) => s + (x.total_cost_usd || 0), 0)
   const totalFlags = sessions.reduce((s, x) => s + (x.flag_count || 0), 0)
-  const scored = sessions.filter(s => s.trust_score != null)
-  const avgTrust = scored.length ? scored.reduce((s, x) => s + x.trust_score, 0) / scored.length : null
+  const scored     = sessions.filter(s => s.trust_score != null)
+  const avgTrust   = scored.length ? scored.reduce((s, x) => s + x.trust_score, 0) / scored.length : null
 
   return (
     <div>
-      <div className="mb-4">
-        <Link to="/projects" className="text-gray-500 hover:text-gray-300 text-sm">← Projects</Link>
+      <div className="mb-6">
+        <Link to="/projects" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">
+          ← Projects
+        </Link>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
-        <h1 className="font-semibold text-lg">{projectName}</h1>
-        <div className="text-gray-500 text-xs font-mono mt-0.5 mb-4">{projectPath}</div>
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-semibold">{sessions.length}</div>
-            <div className="text-xs text-gray-500">sessions</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">${totalCost.toFixed(3)}</div>
-            <div className="text-xs text-gray-500">total cost</div>
-          </div>
-          <div>
-            <div className={`text-2xl font-semibold ${totalFlags > 0 ? 'text-red-400' : ''}`}>{totalFlags}</div>
-            <div className="text-xs text-gray-500">flags</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">
-              {avgTrust != null ? avgTrust.toFixed(1) : '—'}
-            </div>
-            <div className="text-xs text-gray-500">avg trust</div>
-          </div>
+      {/* Project header */}
+      <div className="pb-6 mb-6 border-b border-gray-800">
+        <h1 className="font-semibold text-lg mb-0.5">{projectName}</h1>
+        <div className="text-gray-600 text-[11px] font-mono mb-4">{projectPath}</div>
+        <div className="flex flex-wrap gap-8">
+          <StatNum n={sessions.length} label="sessions" />
+          <StatNum n={`$${totalCost.toFixed(3)}`} label="total cost" mono />
+          <StatNum n={totalFlags} label="flags" warn={totalFlags > 0} />
+          {avgTrust != null && (
+            <StatNum
+              n={avgTrust.toFixed(1)}
+              label="avg trust"
+              mono
+              warn={avgTrust < 50}
+              ok={avgTrust >= 80}
+            />
+          )}
         </div>
       </div>
 
@@ -419,9 +387,9 @@ export default function ProjectDetail() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 pb-3 text-sm font-medium border-b-2 transition-colors ${
               tab === t
-                ? 'border-indigo-500 text-indigo-400'
+                ? 'border-indigo-500 text-white'
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -430,15 +398,19 @@ export default function ProjectDetail() {
         ))}
       </div>
 
-      {tab === 'Sessions' && (
-        <SessionsTab sessions={sessions} projectPath={projectPath} />
-      )}
-      {tab === 'Suggestions' && (
-        <SuggestionsTab projectPath={projectPath} />
-      )}
-      {tab === '.claude Config' && (
-        <ClaudeConfigTab projectPath={projectPath} />
-      )}
+      {tab === 'Sessions'      && <SessionsTab sessions={sessions} projectPath={projectPath} />}
+      {tab === 'Suggestions'   && <SuggestionsTab projectPath={projectPath} />}
+      {tab === '.claude Config' && <ClaudeConfigTab projectPath={projectPath} />}
+    </div>
+  )
+}
+
+function StatNum({ n, label, mono, warn, ok }) {
+  const cls = warn ? 'text-red-400' : ok ? 'text-green-400' : 'text-white'
+  return (
+    <div>
+      <div className={`text-2xl font-semibold tabular-nums ${mono ? 'font-mono text-xl' : ''} ${cls}`}>{n}</div>
+      <div className="text-[11px] text-gray-500 mt-0.5">{label}</div>
     </div>
   )
 }

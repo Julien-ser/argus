@@ -4,42 +4,50 @@ import {
 } from 'recharts'
 import { API } from '../App.jsx'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6']
+const BAR_COLORS = ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff']
 
 function Section({ title, data, emptyMsg }) {
   if (!data) return null
   return (
-    <div className="mb-8">
-      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">{title}</h2>
+    <div className="mb-10">
+      <h2 className="text-[11px] font-medium text-gray-500 uppercase tracking-widest mb-4">{title}</h2>
       {data.length === 0 ? (
-        <p className="text-gray-500 text-sm">{emptyMsg || 'No data yet.'}</p>
+        <p className="text-gray-600 text-sm">{emptyMsg || 'No data yet.'}</p>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <ResponsiveContainer width="100%" height={Math.max(160, data.length * 36)}>
-            <BarChart data={data} layout="vertical" margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
-              <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={160}
-                tick={{ fill: '#d1d5db', fontSize: 12, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 6, fontSize: 12 }}
-                labelStyle={{ color: '#e5e7eb' }}
-                itemStyle={{ color: '#a5b4fc' }}
-              />
-              <Bar dataKey="count" radius={[0, 3, 3, 0]}>
-                {data.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height={Math.max(120, data.length * 32)}>
+          <BarChart data={data} layout="vertical" margin={{ left: 0, right: 48, top: 0, bottom: 0 }}>
+            <XAxis
+              type="number"
+              tick={{ fill: '#4b5563', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={150}
+              tick={{ fill: '#d1d5db', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+              contentStyle={{
+                background: '#0f172a',
+                border: '1px solid #1f2937',
+                borderRadius: 4,
+                fontSize: 12,
+              }}
+              labelStyle={{ color: '#e5e7eb' }}
+              itemStyle={{ color: '#a5b4fc' }}
+            />
+            <Bar dataKey="count" radius={[0, 2, 2, 0]}>
+              {data.map((_, i) => (
+                <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       )}
     </div>
   )
@@ -56,17 +64,17 @@ export default function Analytics() {
       .catch(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="text-gray-500 text-sm">Loading...</div>
+  if (loading) return <div className="text-gray-600 text-sm py-8">Loading…</div>
   if (!data) return <div className="text-red-400 text-sm">Failed to load analytics.</div>
 
   return (
     <div>
-      <h1 className="text-xl font-semibold mb-6">Usage Analytics</h1>
-      <Section title="Tools" data={data.tools} emptyMsg="No tool events captured yet." />
-      <Section title="Hooks Fired" data={data.hooks} emptyMsg="No hook events captured yet." />
-      <Section title="Agent Types Spawned" data={data.agents} emptyMsg="No Agent tool calls captured yet." />
-      <Section title="Skills Invoked" data={data.skills} emptyMsg="No Skill tool calls captured yet." />
-      <Section title="Top Bash Commands" data={data.commands} emptyMsg="No Bash tool calls captured yet." />
+      <h1 className="text-xl font-semibold mb-8">Analytics</h1>
+      <Section title="Tools"               data={data.tools}    emptyMsg="No tool events captured yet." />
+      <Section title="Hooks fired"         data={data.hooks}    emptyMsg="No hook events captured yet." />
+      <Section title="Agent types spawned" data={data.agents}   emptyMsg="No Agent tool calls captured yet." />
+      <Section title="Skills invoked"      data={data.skills}   emptyMsg="No Skill tool calls captured yet." />
+      <Section title="Top bash commands"   data={data.commands} emptyMsg="No Bash tool calls captured yet." />
     </div>
   )
 }

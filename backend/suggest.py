@@ -1,78 +1,67 @@
 from __future__ import annotations
 
 import json
+import os
+import urllib.request
 from collections import Counter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models import Event, Session as SessionModel
 
-# ---------------------------------------------------------------------------
-# LLM-powered suggestions — disabled until ANTHROPIC_API_KEY is set.
-# To enable: pip install anthropic, uncomment the block below, and call
-# _llm_enhance(summary, suggestions) at the end of detect_patterns().
-# ---------------------------------------------------------------------------
-# import os
-# import anthropic
-#
-# _LLM_SYSTEM = """\
-# You are a Claude Code workflow optimizer. Given usage data for a project,
-# identify inefficiencies and return actionable suggestions as a JSON array.
-# Each object must have keys:
-#   type: "skill" | "hook" | "agent" | "config"
-#   priority: "high" | "medium" | "low"
-#   pattern: one-line description of the observed pattern
-#   suggestion: specific, actionable recommendation
-#   config_snippet: exact snippet the user can copy (hook JSON, CLAUDE.md line, etc.)
-# """
-#
-# _anthropic_client: anthropic.Anthropic | None = None
-#
-# def _get_client() -> anthropic.Anthropic | None:
-#     key = os.environ.get("ANTHROPIC_API_KEY", "")
-#     if not key:
-#         return None
-#     global _anthropic_client
-#     if _anthropic_client is None:
-#         _anthropic_client = anthropic.Anthropic(api_key=key)
-#     return _anthropic_client
-#
-# def _llm_enhance(summary: dict, rule_suggestions: list[dict]) -> list[dict]:
-#     """Call claude-haiku-4-5 to enrich or extend rule-based suggestions.
-#
-#     Uses prompt caching on the system message. Falls back to rule_suggestions
-#     on any error or when ANTHROPIC_API_KEY is not set.
-#     """
-#     client = _get_client()
-#     if not client:
-#         return rule_suggestions
-#     try:
-#         msg = client.messages.create(
-#             model="claude-haiku-4-5-20251001",
-#             max_tokens=1024,
-#             system=[{
-#                 "type": "text",
-#                 "text": _LLM_SYSTEM,
-#                 "cache_control": {"type": "ephemeral"},
-#             }],
-#             messages=[{
-#                 "role": "user",
-#                 "content": (
-#                     f"Project summary:\n{json.dumps(summary, indent=2)}\n\n"
-#                     f"Rule-based candidates:\n{json.dumps(rule_suggestions, indent=2)}\n\n"
-#                     "Return enriched + any additional suggestions as a JSON array."
-#                 ),
-#             }],
-#         )
-#         text = msg.content[0].text.strip()
-#         if text.startswith("```"):
-#             text = "\n".join(text.split("\n")[1:])
-#             if "```" in text:
-#                 text = text[: text.rfind("```")]
-#         return json.loads(text.strip())
-#     except Exception:
-#         return rule_suggestions
-# ---------------------------------------------------------------------------
+_OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+_MODEL = "baidu/cobuddy:free"
+
+_LLM_SYSTEM = (
+    "You are a Claude Code workflow optimizer. Given a project usage summary and "
+    "a list of rule-based suggestions, enrich the suggestions and add any new ones "
+    "you spot. Return ONLY a JSON array where each object has exactly these keys: "
+    "type (skill|hook|agent|config), priority (high|medium|low), pattern (one-line "
+    "observation), suggestion (specific actionable recommendation), config_snippet "
+    "(exact text the user can copy). No prose, no markdown fences — raw JSON only."
+)
+
+
+def _llm_enhance(summary: dict, rule_suggestions: list[dict]) -> list[dict]:
+    """Call an OpenRouter free model to enrich rule-based suggestions.
+
+    Falls back silently to rule_suggestions on any error or missing key.
+    Set OPENROUTER_API_KEY to enable.
+    """
+    key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not key:
+        return rule_suggestions
+    try:
+        payload = json.dumps({
+            "model": _MODEL,
+            "max_tokens": 1024,
+            "messages": [
+                {"role": "system", "content": _LLM_SYSTEM},
+                {"role": "user", "content": (
+                    f"Project summary:\n{json.dumps(summary, indent=2)}\n\n"
+                    f"Rule-based candidates:\n{json.dumps(rule_suggestions, indent=2)}\n\n"
+                    "Return the enriched suggestions as a JSON array."
+                )},
+            ],
+        }).encode()
+        req = urllib.request.Request(
+            _OPENROUTER_URL,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+        text = result["choices"][0]["message"]["content"].strip()
+        if text.startswith("```"):
+            text = "\n".join(text.split("\n")[1:])
+            if "```" in text:
+                text = text[: text.rfind("```")]
+        return json.loads(text.strip())
+    except Exception:
+        return rule_suggestions
 
 _PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2, "info": 3}
 
@@ -240,4 +229,16 @@ def detect_patterns(
         })
 
     suggestions.sort(key=lambda s: _PRIORITY_ORDER.get(s["priority"], 99))
-    return suggestions
+
+    summary = {
+        "session_count": n,
+        "top_tools": dict(Counter(e.tool_name for e in events if e.tool_name).most_common(10)),
+        "agent_types": dict(Counter(e.agent_type for e in agent_events).most_common(5)),
+        "skills": dict(skill_counts.most_common(5)),
+        "bash_commands": dict(cmd_counts.most_common(10)),
+        "flagged_events": len(flag_events),
+        "avg_cost_usd": round(
+            sum(s.total_cost_usd or 0 for s in sessions) / n, 4
+        ),
+    }
+    return _llm_enhance(summary, suggestions)

@@ -1,5 +1,11 @@
 # Argus
 
+<p align="center">
+  <img src="argus_logo.svg" width="340" alt="Argus" />
+</p>
+
+### 100 eyes on your AI agent.
+
 ## What is this?
 
 You're using Claude Code to help build your project. It works fast, solves things you'd spend hours on, and drops finished code into your repo. But here's the honest question: **do you actually know what it did?** What files did it touch? What commands did it run? How much did it cost? If something went wrong, could you trace back exactly where?
@@ -36,6 +42,31 @@ Horizontal bar charts for top tools, hooks fired, agent types spawned, skills in
 Per-session trust scores broken down into Safety, Behavior, and Economy components, with sortable columns.
 
 ![Trust Scoring](trust.png)
+
+### Session Detail
+Collapsible trace tree with session header (cost, trust score, token counts), agent → tool call hierarchy, and expandable before/after diffs with full JSON input/output.
+
+![Session Detail](sessiondet.png)
+
+### Agents
+Per-agent-type breakdown: total invocations, sessions spawned, spawn cost, and recent invocation prompts — grouped by agent type.
+
+![Agents](agents.png)
+
+### Project Suggestions
+LLM-enhanced optimization suggestions derived from session patterns — priority-ranked cards with actionable recommendations and copyable config snippets.
+
+![Suggestions](suggestions.png)
+
+### .claude Config Analyzer
+Cross-references registered hooks against hooks actually fired in sessions, surfaces CLAUDE.md observations, and shows global settings and custom commands.
+
+![.claude Config](config.png)
+
+### Session Comparison
+Side-by-side metric table (cost, events, flags, tokens, duration, trust) for two sessions with an overlaid cumulative cost chart.
+
+![Session Comparison](compare.png)
 
 ## Why
 
@@ -150,7 +181,7 @@ Each session gets a composite trust score (0–100) computed on every ingest eve
 - 2+ sessions over $0.50 → suggest cost discipline
 - Same file read 5+ times → suggest CLAUDE.md reference
 
-LLM enhancement via Claude (`claude-haiku-4-5`) is wired but commented out — set `ANTHROPIC_API_KEY` and uncomment the block in `suggest.py` to enable it.
+LLM enhancement via OpenRouter (`baidu/cobuddy:free`) is live — copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` to enable it. Falls back to rule-based suggestions silently if the key is absent.
 
 ### .claude config analyzer
 
@@ -166,6 +197,7 @@ LLM enhancement via Claude (`claude-haiku-4-5`) is wired but commented out — s
 /compare               Side-by-side session comparison with overlaid cost timeline
 /flags                 Security feed — all flagged events with reason and severity
 /analytics             Usage Analytics — bar charts for tools, hooks, agents, skills, commands
+/agents                Agent activity — per-agent-type invocation counts, sessions, and recent prompts
 /trust                 Trust scoring — per-session Safety / Behavior / Economy breakdown
 ```
 
@@ -192,6 +224,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+For LLM-enhanced suggestions, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` (free account at openrouter.ai). The backend loads it automatically on startup.
 
 Then register hooks — run the installer for your platform:
 
