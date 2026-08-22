@@ -36,9 +36,10 @@ from __future__ import annotations
 import fnmatch
 import re
 import shlex
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from datetime import datetime, timedelta
-from typing import Any, Callable, Iterable
+from typing import Any, Iterable
 
 
 class AQLError(ValueError):

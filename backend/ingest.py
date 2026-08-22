@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from database import get_session
-from models import Event, Session as SessionModel
-from transcript import find_transcript, sum_transcript, cost_from_usage
+from models import Event
+from models import Session as SessionModel
+from transcript import cost_from_usage, find_transcript, sum_transcript
 from trust import compute_trust_scores
 
 router = APIRouter()

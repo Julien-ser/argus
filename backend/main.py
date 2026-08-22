@@ -4,11 +4,11 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from routers import analytics, events, flags, projects, search, sessions, trust
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import init_db
 from ingest import router as ingest_router
-from routers import analytics, events, flags, projects, search, sessions, trust
 
 # Load .env from project root (one level up from backend/) if it exists.
 # Simple parser: ignores blank lines and comments, sets only unset vars.

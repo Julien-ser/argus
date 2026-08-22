@@ -11,9 +11,10 @@ from pathlib import PurePosixPath, PureWindowsPath
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
-from aql import AQLError, FIELD_ALIASES, run
+from aql import FIELD_ALIASES, AQLError, run
 from database import get_session
-from models import Event, Session as SessionModel
+from models import Event
+from models import Session as SessionModel
 
 router = APIRouter(prefix="/search", tags=["search"])
 
