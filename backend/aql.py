@@ -380,7 +380,8 @@ def run(query: str, rows: Iterable[dict], *, limit: int = 200) -> dict[str, Any]
                     deduped.append(r)
             result = deduped
         elif name == "where":
-            result = [r for r in result if all(t.matches(r) for t in _parse_terms(" ".join(args)))]
+            expr = " ".join(shlex.quote(a) if " " in a else a for a in args)
+            result = [r for r in result if all(t.matches(r) for t in _parse_terms(expr))]
 
     truncated = len(result) > limit
     return {
