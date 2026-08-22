@@ -7,7 +7,8 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 
 from database import engine, get_session
-from models import Event, Session as SessionModel
+from models import Event
+from models import Session as SessionModel
 from transcript import cost_from_usage, find_transcript, sum_transcript
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])

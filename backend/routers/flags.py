@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from database import get_session
-from models import Event, Session as SessionModel
+from models import Event
+from models import Session as SessionModel
 
 router = APIRouter(prefix="/flags", tags=["flags"])
 

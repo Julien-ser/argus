@@ -1,9 +1,13 @@
+import os
 from pathlib import Path
 from typing import Generator
 
 from sqlmodel import Session, SQLModel, create_engine
 
-_DB_PATH = Path(__file__).parent.parent / "argus.db"
+# ARGUS_DB lets a deployment point at a different database than the developer's
+# own. The public demo instance runs on a synthetic DB this way — the real
+# argus.db holds actual session traces and must never be what gets deployed.
+_DB_PATH = Path(os.environ.get("ARGUS_DB") or (Path(__file__).parent.parent / "argus.db"))
 DATABASE_URL = f"sqlite:///{_DB_PATH}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
@@ -13,6 +17,7 @@ _MIGRATIONS = [
     "ALTER TABLE event ADD COLUMN agent_type TEXT",
     "ALTER TABLE event ADD COLUMN skill_name TEXT",
     "ALTER TABLE event ADD COLUMN command TEXT",
+    "ALTER TABLE event ADD COLUMN severity TEXT",
     "ALTER TABLE session ADD COLUMN trust_score REAL",
     "ALTER TABLE session ADD COLUMN safety_score REAL",
     "ALTER TABLE session ADD COLUMN behavior_score REAL",

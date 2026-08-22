@@ -7,7 +7,8 @@ from collections import Counter
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models import Event, Session as SessionModel
+    from models import Event
+    from models import Session as SessionModel
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 _MODEL = "baidu/cobuddy:free"

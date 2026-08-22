@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models import Event, Session as SessionModel
+    from models import Event
+    from models import Session as SessionModel
 
 _SAFETY_PENALTIES: list[tuple[str, float]] = [
     ("dangerous bash: 'curl | bash'", 40),

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from claude_config import analyze_config
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
-from claude_config import analyze_config
 from database import get_session
-from models import Event, Session as SessionModel
+from models import Event
+from models import Session as SessionModel
 from suggest import detect_patterns
 
 router = APIRouter(prefix="/projects", tags=["projects"])

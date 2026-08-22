@@ -6,14 +6,8 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/sessions':  'http://localhost:7777',
-      '/events':    'http://localhost:7777',
-      '/flags':     'http://localhost:7777',
-      '/ingest':    'http://localhost:7777',
-      '/health':    'http://localhost:7777',
-      '/analytics': 'http://localhost:7777',
-      '/trust':     'http://localhost:7777',
-      '/projects':  'http://localhost:7777',
+      '/api':    'http://localhost:7777',
+      '/ingest': 'http://localhost:7777',
     }
   },
 })

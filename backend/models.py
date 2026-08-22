@@ -1,6 +1,6 @@
+import uuid
 from datetime import datetime
 from typing import Optional
-import uuid
 
 from sqlmodel import Field, SQLModel
 
@@ -39,4 +39,7 @@ class Event(SQLModel, table=True):
     duration_ms: int = 0
     flagged: bool = False
     flag_reason: Optional[str] = None
+    # info | low | medium | high | critical — highest severity among the
+    # rules this event tripped. None when the event is clean.
+    severity: Optional[str] = Field(default=None, index=True)
     timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
