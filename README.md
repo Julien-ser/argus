@@ -19,54 +19,45 @@ Argus is built for developers using Claude Code who want to know exactly what th
 ## Screenshots
 
 ### Dashboard
-Session list with per-session cost, token counts, trust scores, skill usage pills, and flagged event counts.
+Session list with per-session cost, token counts, trust scores, and flagged event counts.
 
 ![Dashboard](dashboard.png)
 
-### Projects
-All projects grouped from sessions, each showing aggregated cost, tokens, flags, trust score, and skills used.
+### Search
+Query agent telemetry with [AQL](#aql--the-argus-query-language), a pipe-based search language. Severity-coloured results, one-click example queries, and a built-in field reference.
 
-![Projects](projects.png)
+![Search](search.png)
 
 ### Security Flags
 Every flagged event across all sessions with severity, tool, reason, and a drill-down to the full tool input.
 
 ![Flags](flags.png)
 
+### Projects
+All projects grouped from sessions, each showing aggregated cost, tokens, flags, and trust score.
+
+![Projects](projects.png)
+
 ### Usage Analytics
 Horizontal bar charts for top tools, hooks fired, agent types spawned, skills invoked, and top bash commands.
 
-![Analytics](usage.png)
+![Analytics](analytics.png)
+
+### Agents
+Per-agent-type breakdown: total invocations, sessions spawned, spawn cost, and recent invocation prompts.
+
+![Agents](agents.png)
 
 ### Trust Scoring
 Per-session trust scores broken down into Safety, Behavior, and Economy components, with sortable columns.
 
 ![Trust Scoring](trust.png)
 
-### Session Detail
-Collapsible trace tree with session header (cost, trust score, token counts), agent → tool call hierarchy, and expandable before/after diffs with full JSON input/output.
-
-![Session Detail](sessiondet.png)
-
-### Agents
-Per-agent-type breakdown: total invocations, sessions spawned, spawn cost, and recent invocation prompts — grouped by agent type.
-
-![Agents](agents.png)
-
-### Project Suggestions
-LLM-enhanced optimization suggestions derived from session patterns — priority-ranked cards with actionable recommendations and copyable config snippets.
-
-![Suggestions](suggestions.png)
-
-### .claude Config Analyzer
-Cross-references registered hooks against hooks actually fired in sessions, surfaces CLAUDE.md observations, and shows global settings and custom commands.
-
-![.claude Config](config.png)
-
-### Session Comparison
-Side-by-side metric table (cost, events, flags, tokens, duration, trust) for two sessions with an overlaid cumulative cost chart.
-
-![Session Comparison](compare.png)
+### Also in the UI
+- **Session Detail** — collapsible trace tree, agent → tool call hierarchy, expandable JSON input/output, live SSE feed for active sessions
+- **Project Suggestions** — LLM-enhanced optimization suggestions derived from session patterns
+- **.claude Config Analyzer** — registered hooks cross-referenced against hooks actually fired
+- **Session Comparison** — side-by-side metrics with an overlaid cumulative cost chart
 
 ## Why
 
@@ -152,13 +143,23 @@ Event
 
 ### Flag rules
 
-| Pattern | Severity |
+Every rule carries a severity, so the flag feed can be triaged like an alert
+list rather than read as an undifferentiated pile of booleans. An event that
+trips several rules reports all of them and takes the highest severity.
+
+| Rule | Severity |
 |---|---|
-| Bash: `sudo`, `rm -rf`, `curl \| bash`, `chmod 777` | warning / critical |
-| Write outside project directory | warning |
-| Subagent with no parent session | info |
-| Single event cost > $0.10 | warning |
-| Session cost > $1.00 | warning |
+| Pipe to shell — `curl`/`wget` piped into `sh`/`bash`/`zsh`, with or without `sudo` | `critical` |
+| `dd if=… of=/dev/…`, or a redirect to `/dev/sd*` | `critical` |
+| Bash: `rm -rf` | `high` |
+| Bash: `chmod 777` (including `chmod -R 777`) | `high` |
+| Write or Edit outside the project directory | `high` |
+| Bash: `sudo` | `medium` |
+| Session cost > $1.00 | `medium` |
+| Single event cost > $0.10 | `low` |
+| Subagent spawned with no parent session | `info` |
+
+Query them with [AQL](#aql--the-argus-query-language): `severity>=high | table timestamp tool_name flag_reason`.
 
 ### Trust scoring
 
@@ -195,11 +196,132 @@ LLM enhancement via OpenRouter (`baidu/cobuddy:free`) is live — copy `.env.exa
 /projects/detail       Project detail — Sessions | Suggestions | .claude Config tabs
 /sessions/:id          Session trace tree + live SSE feed for active sessions + Suggestions tab
 /compare               Side-by-side session comparison with overlaid cost timeline
+/search                AQL search — query events by field, severity, time; stats and tables
 /flags                 Security feed — all flagged events with reason and severity
 /analytics             Usage Analytics — bar charts for tools, hooks, agents, skills, commands
 /agents                Agent activity — per-agent-type invocation counts, sessions, and recent prompts
 /trust                 Trust scoring — per-session Safety / Behavior / Economy breakdown
 ```
+
+## AQL — the Argus Query Language
+
+Agent telemetry deserves to be searched, not just browsed. AQL is a pipe-based
+query language in the shape of Splunk's SPL, but with the vocabulary of agent
+sessions: tools, subagents, skills, token cost, and flag reasons.
+
+```
+tool=Bash severity>=high | table timestamp command flag_reason
+tool=Agent | stats sum(cost_usd) as spend, count by agent_type | sort -spend
+"rm -rf" earliest=-24h
+NOT tool=Read | stats count by tool
+| stats sum(cost_usd) as cost by session | sort -cost | head 10
+```
+
+### Search terms
+
+A query is a list of terms, ANDed together, optionally followed by pipeline
+commands.
+
+| Form | Example | Meaning |
+|---|---|---|
+| `field=value` | `tool=Bash` | equals (case-insensitive) |
+| `field!=value` | `tool!=Read` | not equals |
+| `field>value` | `cost>0.10` | numeric / severity / time comparison (`>`, `<`, `>=`, `<=`) |
+| `field~value` | `reason~outside` | contains |
+| `field=val*` | `command=git*` | wildcard, `*` anywhere in the value |
+| `bareword` | `npm` | full-text across tool name, command, input, output, flag reason |
+| `"quoted phrase"` | `"rm -rf build"` | full-text, spaces preserved |
+| `NOT term` | `NOT tool=Read` | negation |
+| `flagged=true` | | booleans take `true` / `false` |
+
+`OR` is not supported yet; terms are ANDed.
+
+### Fields
+
+Canonical names come from the event row. These aliases are shorthand:
+
+| Alias | Field |
+|---|---|
+| `tool` | `tool_name` |
+| `agent` | `agent_type` |
+| `skill` | `skill_name` |
+| `session` | `session_id` |
+| `cost` | `cost_usd` |
+| `reason`, `rule` | `flag_reason` |
+| `project` | project directory name |
+| `status` | parent session status |
+| `event` | `type` |
+| `hook` | `hook_event_name` |
+
+Also queryable: `severity`, `flagged`, `timestamp`, `command`, `tool_input`,
+`tool_output`, `input_tokens`, `output_tokens`, `duration_ms`, `trust_score`.
+
+### Severity
+
+`info` < `low` < `medium` < `high` < `critical`, compared **by rank, not
+alphabetically** — `severity>=high` matches high and critical, and
+`sort -severity` puts critical on top. Severity is set by whichever rule fired:
+pipe-to-shell is `critical`, a write outside the project is `high`, cost rules
+are `low`/`medium`.
+
+### Time
+
+Time is a filter like any other. Relative offsets accept `s`, `m`, `h`, `d`:
+
+```
+earliest=-24h              events from the last day
+earliest=-30m latest=-5m   a window
+earliest=2026-08-01        ISO timestamps work too
+```
+
+### Pipeline commands
+
+| Command | Example | Notes |
+|---|---|---|
+| `stats` | `stats count by tool` | `count`, `sum(f)`, `avg(f)`, `min(f)`, `max(f)`, `dc(f)`; rename with `as`; group with `by` (multiple fields allowed) |
+| `table` | `table timestamp tool_name cost_usd` | pick columns (alias: `fields`) |
+| `sort` | `sort -cost_usd` | `-` prefix for descending; works on `as` aliases |
+| `head` | `head 20` | first N rows |
+| `dedup` | `dedup session` | first row per distinct value |
+| `where` | `stats count by tool \| where count>5` | filter after aggregation |
+
+### Worked examples
+
+```bash
+# Everything flagged, worst first
+flagged=true | sort -severity
+
+# Only the serious stuff, as a table
+severity>=high | table timestamp severity tool_name command flag_reason
+
+# Which tools does the agent actually reach for?
+| stats count by tool
+
+# Where is the money going?
+tool=Agent | stats sum(cost_usd) as spend, count by agent_type | sort -spend
+
+# Shell commands run in the last day
+tool=Bash earliest=-24h | table timestamp command project
+
+# Sessions ranked by spend
+| stats sum(cost_usd) as cost, count by session | sort -cost | head 10
+
+# Writes that landed outside the project directory
+reason~"outside project" | table timestamp tool_input project
+```
+
+### API
+
+```
+GET /api/search?q=<query>&limit=200
+GET /api/search/help            # fields, operators, commands, examples
+```
+
+A malformed query returns `400` with a readable message
+(`unknown command 'frobnicate' (available: stats, table, sort, head, dedup, where)`).
+
+Queries are executed in Python over rows fetched from the database — never
+compiled into SQL — so a user-supplied query string has no injection surface.
 
 ## Stack
 
@@ -214,15 +336,29 @@ LLM enhancement via OpenRouter (`baidu/cobuddy:free`) is live — copy `.env.exa
 ## Quickstart
 
 ```bash
-# Backend
-cd backend
-pip install fastapi uvicorn sqlmodel
-uvicorn main:app --port 7777 --reload
+# One process serves the API and the UI
+cd frontend && npm install && npm run build
+cd ../backend && pip install -r requirements.txt
+uvicorn main:app --port 7777
+```
 
-# Frontend (separate terminal)
-cd frontend
-npm install
-npm run dev
+Open <http://localhost:7777>.
+
+For frontend development, run Vite separately for hot reload — it proxies the
+API to port 7777:
+
+```bash
+cd frontend && npm run dev      # http://localhost:3000
+```
+
+### Try it without your own data
+
+`demo.db` is a synthetic database — invented sessions that exercise every view
+and every flag rule. Nothing in it comes from a real session.
+
+```bash
+python scripts/make_demo_db.py
+cd backend && ARGUS_DB=../demo.db uvicorn main:app --port 7788
 ```
 
 For LLM-enhanced suggestions, copy `.env.example` to `.env` and set `OPENROUTER_API_KEY` (free account at openrouter.ai). The backend loads it automatically on startup.
