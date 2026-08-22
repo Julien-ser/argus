@@ -266,8 +266,9 @@ def parse(query: str) -> Pipeline:
             raise AQLError("empty pipeline stage — a trailing '|' has nothing after it")
         name, args = tokens[0].lower(), tokens[1:]
         if name not in ("stats", "table", "fields", "sort", "head", "dedup", "where"):
-            raise AQLError(f"unknown command '{name}' "
-                           "(available: stats, table, sort, head, dedup, where)")
+            raise AQLError(
+                f"unknown command '{name}' (available: stats, table, fields, sort, head, dedup, where)"
+            )
         pipeline.stages.append((name, args))
     return pipeline
 
