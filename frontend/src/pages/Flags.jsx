@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
 
+// Severity now comes from the rule that fired, server-side. The old version
+// re-derived it here by string-matching flag_reason — including 'curl | bash',
+// a reason string the backend never actually produced.
 function severity(flag) {
-  const r = (flag.flag_reason || '').toLowerCase()
-  if (r.includes('rm -rf') || r.includes('curl | bash') || r.includes('sudo')) return 'critical'
-  if (r.includes('outside') || r.includes('high') || r.includes('cost')) return 'warning'
-  return 'info'
+  return (flag.severity || 'info').toLowerCase()
 }
 
 const SEV = {
-  critical: { border: 'border-l-red-500',   label: 'text-red-400' },
+  critical: { border: 'border-l-red-500',    label: 'text-red-400' },
+  high:     { border: 'border-l-orange-500', label: 'text-orange-400' },
+  medium:   { border: 'border-l-amber-500',  label: 'text-amber-400' },
+  low:      { border: 'border-l-sky-500',    label: 'text-sky-400' },
   warning:  { border: 'border-l-amber-500',  label: 'text-amber-400' },
   info:     { border: 'border-l-gray-600',   label: 'text-gray-500' },
 }
@@ -51,7 +54,7 @@ export default function Flags() {
         <div className="space-y-2">
           {flags.map(flag => {
             const sev = severity(flag)
-            const { border, label } = SEV[sev]
+            const { border, label } = SEV[sev] || SEV.info
             const name = flag.project_path
               ? (flag.project_path.split('/').pop() || flag.project_path.split('\\').pop())
               : flag.session_id?.slice(0, 8)
