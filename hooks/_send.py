@@ -172,9 +172,9 @@ if _breaker_open():
         key = os.environ.get("ARGUS_INGEST_KEY")
         if key:
             req.add_header("Authorization", "Bearer " + key)
-        urllib.request.urlopen(req, timeout=_timeout())
-        if BREAKER_PATH.exists():
-            _clear_breaker()
+with urllib.request.urlopen(req, timeout=_timeout()):
+    pass
+_clear_breaker()
     except Exception:
         try:
             _trip_breaker()
