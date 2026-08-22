@@ -7,14 +7,19 @@ import Dashboard from './pages/Dashboard.jsx'
 import Flags from './pages/Flags.jsx'
 import ProjectDetail from './pages/ProjectDetail.jsx'
 import Projects from './pages/Projects.jsx'
+import Search from './pages/Search.jsx'
 import SessionDetail from './pages/SessionDetail.jsx'
 import TrustScoring from './pages/TrustScoring.jsx'
 
-export const API = ''
+// API base. Namespaced under /api so the SPA can own every other path:
+// routes like /flags and /analytics exist on BOTH sides, and without the
+// prefix a hard refresh on those pages returns API JSON instead of the UI.
+export const API = '/api'
 
 const NAV_LINKS = [
   { to: '/',          label: 'Dashboard', end: true },
   { to: '/projects',  label: 'Projects' },
+  { to: '/search',    label: 'Search' },
   { to: '/flags',     label: 'Flags' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/agents',    label: 'Agents' },
@@ -57,6 +62,7 @@ export default function App() {
             <Route path="/projects"        element={<Projects />} />
             <Route path="/projects/detail" element={<ProjectDetail />} />
             <Route path="/compare"         element={<Compare />} />
+            <Route path="/search"          element={<Search />} />
             <Route path="/flags"           element={<Flags />} />
             <Route path="/analytics"       element={<Analytics />} />
             <Route path="/agents"          element={<Agents />} />
