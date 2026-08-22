@@ -47,7 +47,12 @@ def _endpoint() -> str:
 
 
 def _is_local(url: str) -> bool:
-    return "localhost" in url or "127.0.0.1" in url or "::1" in url
+    try:
+        from urllib.parse import urlparse
+        host = (urlparse(url).hostname or "").lower()
+    except Exception:
+        return False
+    return host in ("localhost", "127.0.0.1", "::1")
 
 
 def _mode(url: str) -> str:
