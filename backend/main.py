@@ -84,6 +84,19 @@ class SPAStaticFiles(StaticFiles):
     """
 
     async def get_response(self, path: str, scope):
+        # An unknown /api/* path is a client error, not a page. Without this,
+        # the fallback below answers `GET /api/typo` with 200 + index.html, so
+        # a misspelled endpoint looks like a working page returning HTML and
+        # fetch() fails somewhere far from the cause.
+        #
+        # Checked against the ASGI scope rather than `path`: StaticFiles hands
+        # this method an OS-normalised path, so on Windows it arrives as
+        # 'api\\typo' and a '/'-based check silently misses (while passing on
+        # Linux CI).
+        request_path = scope.get("path", "")
+        if request_path == "/api" or request_path.startswith("/api/"):
+            raise StarletteHTTPException(status_code=404, detail="Not Found")
+
         # StaticFiles *raises* HTTPException(404) for a missing file rather than
         # returning a 404 response, so this has to be a try/except, not a
         # status-code check.

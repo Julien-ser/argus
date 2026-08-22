@@ -153,6 +153,26 @@ class RedactionTests(unittest.TestCase):
         self.assertIsNone(_send.shape(b"not json", "redacted"))
         self.assertIsNone(_send.shape(b"not json", "metadata"))
 
+    def test_lookalike_hostnames_are_not_local(self):
+        """Regression: a substring check called these local and sent full payloads."""
+        os.environ.pop("ARGUS_MODE", None)
+        for url in [
+            "https://localhost.attacker.example/ingest",
+            "http://127.0.0.1.evil.example/ingest",
+            "https://notlocalhost/ingest",
+            "https://example.com/?host=localhost",
+        ]:
+            with self.subTest(url=url):
+                self.assertFalse(_send._is_local(url))
+                self.assertEqual(_send._mode(url), "redacted")
+
+    def test_genuine_local_hosts_are_local(self):
+        os.environ.pop("ARGUS_MODE", None)
+        for url in ["http://localhost:7777/ingest", "http://127.0.0.1:7777/ingest",
+                    "http://[::1]:7777/ingest"]:
+            with self.subTest(url=url):
+                self.assertTrue(_send._is_local(url))
+
     def test_remote_endpoint_defaults_to_redacted(self):
         os.environ.pop("ARGUS_MODE", None)
         self.assertEqual(_send._mode("http://localhost:7777/ingest"), "full")

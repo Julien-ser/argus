@@ -98,7 +98,11 @@ def add(section, cmd):
     entries = hooks.setdefault(section, [])
     for e in entries:
         for h in e.get("hooks", []):
-            if "argus" in h.get("command", "").lower():
+            # Match the install location, not the substring "argus": a user's
+            # own hook at ~/projects/argus-tools/lint.py must not be rewritten
+            # to point at ours.
+            command = h.get("command", "").lower().replace("\\", "/")
+            if "/.argus/hooks/" in command:
                 h["command"] = cmd      # refresh an existing entry to the current path
                 print(f"  {section}: already registered, command refreshed")
                 return

@@ -83,6 +83,19 @@ class OtherRuleTests(unittest.TestCase):
                   tool_input=json.dumps({"file_path": "/home/dev/projects/demo/app.py"}))
         self.assertFalse(_evaluate_flags(e, session())[0])
 
+    def test_sibling_directory_sharing_a_prefix_counts_as_outside(self):
+        """Regression: startswith() treated /projects/demo-evil as inside /projects/demo."""
+        e = Event(session_id="s", type="tool_call", tool_name="Write",
+                  tool_input=json.dumps({"file_path": "/home/dev/projects/demo-evil/x.py"}))
+        flagged, reason, _sev = _evaluate_flags(e, session())
+        self.assertTrue(flagged, "a sibling directory is not inside the project")
+        self.assertIn("write outside project", reason)
+
+    def test_nested_path_inside_the_project_is_clean(self):
+        e = Event(session_id="s", type="tool_call", tool_name="Write",
+                  tool_input=json.dumps({"file_path": "/home/dev/projects/demo/a/b/c.py"}))
+        self.assertFalse(_evaluate_flags(e, session())[0])
+
     def test_root_level_subagent_spawn(self):
         e = Event(session_id="s", type="subagent_spawn", tool_name="Agent")
         self.assertTrue(_evaluate_flags(e, session())[0])

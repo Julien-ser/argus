@@ -27,6 +27,7 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 
 DEFAULT_ENDPOINT = "http://localhost:7777/ingest"
 BREAKER_PATH = Path(tempfile.gettempdir()) / ".argus-breaker"
@@ -47,8 +48,13 @@ def _endpoint() -> str:
 
 
 def _is_local(url: str) -> bool:
+    """True only for a genuinely local host.
+
+    A substring check ("localhost" in url) would call
+    https://localhost.attacker.example/ local and ship an unredacted payload
+    to it, so the hostname is parsed and compared exactly.
+    """
     try:
-        from urllib.parse import urlparse
         host = (urlparse(url).hostname or "").lower()
     except Exception:
         return False
@@ -157,9 +163,9 @@ def send(payload: bytes) -> None:
     try:
         if not payload:
             return
-url = _endpoint()
-if _breaker_open():
-    return
+        url = _endpoint()
+        if _breaker_open():
+            return
         body = shape(payload, _mode(url))
         if not body:
             return
@@ -172,9 +178,11 @@ if _breaker_open():
         key = os.environ.get("ARGUS_INGEST_KEY")
         if key:
             req.add_header("Authorization", "Bearer " + key)
-with urllib.request.urlopen(req, timeout=_timeout()):
-    pass
-_clear_breaker()
+        # Context manager so the response is always closed, even on a partial
+        # read — a leaked socket per tool call adds up over a long session.
+        with urllib.request.urlopen(req, timeout=_timeout()):
+            pass
+        _clear_breaker()
     except Exception:
         try:
             _trip_breaker()

@@ -87,6 +87,7 @@ def search(
 @router.get("/help")
 def help_() -> dict:
     """Field list and example queries, for the UI's help panel."""
+    return {
         "fields": sorted({*FIELD_ALIASES.values(), "severity", "flagged", "timestamp",
                           "command", "tool_input", "tool_output", "project_path", "trust_score",
                           "cost_usd", "input_tokens", "output_tokens", "duration_ms"}),

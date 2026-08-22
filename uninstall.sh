@@ -55,7 +55,13 @@ for section in list(hooks):
     kept_entries = []
     for entry in hooks.get(section, []):
         kept_hooks = []
-            if "/.argus/hooks/" in h.get("command", "").lower().replace("\\", "/"):
+        for h in entry.get("hooks", []):
+            # Match the install location, not the substring "argus". A user
+            # script living under, say, ~/projects/argus-tools/ is not ours to
+            # remove.
+            command = h.get("command", "").lower().replace("\\", "/")
+            if "/.argus/hooks/" in command:
+                removed += 1
             else:
                 kept_hooks.append(h)
         if kept_hooks:

@@ -180,6 +180,13 @@ class PipelineTests(unittest.TestCase):
         out = q("| stats count by tool | where count>1")
         self.assertEqual(len(out["rows"]), 1)
 
+    def test_where_preserves_quoted_phrases(self):
+        """Regression: `where` re-joined lexed tokens, splitting quoted phrases."""
+        out = q('| where command="rm -rf build"')
+        self.assertEqual(out["matched"], 4)      # filter applies after the stage
+        self.assertEqual(len(out["rows"]), 1)
+        self.assertEqual(out["rows"][0]["command"], "rm -rf build")
+
     def test_chained_stages(self):
         out = q("tool=Bash | table command cost_usd | sort -cost_usd | head 1")
         self.assertEqual(out["rows"][0]["command"], "rm -rf build")
