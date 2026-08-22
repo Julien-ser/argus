@@ -55,9 +55,7 @@ for section in list(hooks):
     kept_entries = []
     for entry in hooks.get(section, []):
         kept_hooks = []
-        for h in entry.get("hooks", []):
-            if "argus" in h.get("command", "").lower():
-                removed += 1
+            if "/.argus/hooks/" in h.get("command", "").lower().replace("\\", "/"):
             else:
                 kept_hooks.append(h)
         if kept_hooks:
