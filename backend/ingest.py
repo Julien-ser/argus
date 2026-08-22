@@ -100,9 +100,13 @@ def _evaluate_flags(event: Event, sess: SessionModel) -> tuple[bool, str | None,
     if event.tool_name in ("Write", "Edit") and event.tool_input:
         try:
             path = json.loads(event.tool_input).get("file_path", "")
-            if path and sess.project_path and not path.startswith(sess.project_path):
-                reasons.append(f"write outside project: {path}")
-                severities.append(_severity_of("write outside project"))
+            if path and sess.project_path:
+                from pathlib import Path
+                proj = Path(sess.project_path).resolve()
+                target = Path(path).resolve()
+                if target != proj and proj not in target.parents:
+                    reasons.append(f"write outside project: {path}")
+                    severities.append(_severity_of("write outside project"))
         except Exception:
             pass
 
