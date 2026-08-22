@@ -157,10 +157,9 @@ def send(payload: bytes) -> None:
     try:
         if not payload:
             return
-        url = _endpoint()
-        breaker_was_open = _breaker_open()
-        if breaker_was_open:
-            return
+url = _endpoint()
+if _breaker_open():
+    return
         body = shape(payload, _mode(url))
         if not body:
             return
