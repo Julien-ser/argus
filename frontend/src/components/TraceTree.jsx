@@ -6,7 +6,7 @@ export default function TraceTree({ session, events, subagents = [] }) {
       <div className="border border-gray-800 rounded-lg overflow-hidden">
         <div className="bg-gray-900 px-3 py-2 text-xs text-gray-500 font-mono flex items-center gap-2">
           <span className="text-indigo-400">◆</span>
-          <span className="truncate">{session.project_path || session.id}</span>
+          <span className="truncate" title={session.project_path || session.id}>{session.project_path || session.id}</span>
           <span className="ml-auto shrink-0">{events.length} events</span>
         </div>
         <div className="space-y-1 p-1">

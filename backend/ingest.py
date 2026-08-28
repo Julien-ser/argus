@@ -1,10 +1,11 @@
 import json
+import os
 import re
 import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 
 from database import get_session
@@ -14,6 +15,12 @@ from transcript import cost_from_usage, find_transcript, sum_transcript
 from trust import compute_trust_scores
 
 router = APIRouter()
+
+# A public demo instance must not accept writes from the internet: without this
+# anyone who finds the URL can POST junk into the database the demo renders.
+# Set ARGUS_READONLY=1 there; leave it unset on a private/self-hosted instance,
+# which is the whole point of the tool.
+READONLY = os.environ.get("ARGUS_READONLY", "").strip().lower() in ("1", "true", "yes")
 
 # ── Detection rules ──────────────────────────────────────────────────────────
 # Every rule carries a severity so the flag feed can be triaged like a SIEM
@@ -134,6 +141,9 @@ async def ingest(request: Request, db: Session = Depends(get_session)):
     transcript JSONL.  On PreToolUse / PostToolUse an Event row is written and
     flag rules are evaluated immediately.
     """
+    if READONLY:
+        raise HTTPException(status_code=403, detail="This Argus instance is read-only (ARGUS_READONLY).")
+
     payload: dict[str, Any] = await request.json()
 
     session_id: str = payload.get("session_id") or str(uuid.uuid4())

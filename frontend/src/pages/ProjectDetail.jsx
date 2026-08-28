@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { money } from '../format.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import { API } from '../App.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
@@ -156,7 +157,7 @@ function ClaudeConfigTab({ projectPath }) {
                 : project_commands.map(cmd => (
                     <div key={cmd.name} className="mb-2">
                       <div className="text-xs font-mono text-indigo-400">/{cmd.name}</div>
-                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate">{cmd.preview}</div>}
+                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate" title={cmd.preview}>{cmd.preview}</div>}
                     </div>
                   ))
               }
@@ -168,7 +169,7 @@ function ClaudeConfigTab({ projectPath }) {
                 : global_commands.map(cmd => (
                     <div key={cmd.name} className="mb-2">
                       <div className="text-xs font-mono text-indigo-400">/{cmd.name}</div>
-                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate">{cmd.preview}</div>}
+                      {cmd.preview && <div className="text-[11px] text-gray-600 truncate" title={cmd.preview}>{cmd.preview}</div>}
                     </div>
                   ))
               }
@@ -367,7 +368,7 @@ export default function ProjectDetail() {
         <div className="text-gray-600 text-[11px] font-mono mb-4">{projectPath}</div>
         <div className="flex flex-wrap gap-8">
           <StatNum n={sessions.length} label="sessions" />
-          <StatNum n={`$${totalCost.toFixed(3)}`} label="total cost" mono />
+          <StatNum n={money(totalCost)} label="total cost" mono />
           <StatNum n={totalFlags} label="flags" warn={totalFlags > 0} />
           {avgTrust != null && (
             <StatNum

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { money } from '../format.js'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
@@ -134,7 +135,7 @@ export default function TrustScoring() {
                   <td className="py-3 text-right"><ScorePill score={s.economy_score} /></td>
                   <td className="py-3 text-right"><TrustBadge score={s.trust_score} /></td>
                   <td className="py-3 text-right text-gray-500 text-xs font-mono tabular-nums">
-                    ${(s.total_cost_usd || 0).toFixed(4)}
+                    {money(s.total_cost_usd)}
                   </td>
                   <td className="py-3 text-right">
                     {s.flag_count > 0

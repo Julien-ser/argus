@@ -30,8 +30,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-950 text-gray-100">
-        <nav className="border-b border-gray-800 px-6 flex items-end h-12">
-          <Link to="/" className="flex items-center gap-2 pb-3 mr-5 group">
+        {/* Horizontal scroll, not wrap: 7 links plus the logo cannot fit a
+            390px phone, and a wrapped nav pushes the content off-screen. */}
+        <nav className="border-b border-gray-800 px-4 sm:px-6 flex items-end h-12 overflow-x-auto whitespace-nowrap scrollbar-none">
+          <Link to="/" className="flex items-center gap-2 pb-3 mr-3 sm:mr-5 group shrink-0">
             <ArgusIcon size={20} />
             <span className="font-mono font-semibold tracking-[0.18em] text-[13px] text-white group-hover:text-gray-200 transition-colors">
               ARGUS
@@ -44,7 +46,7 @@ export default function App() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `px-3 pb-3 text-[13px] transition-colors border-b-2 ${
+                `px-2.5 sm:px-3 pb-3 text-[13px] transition-colors border-b-2 shrink-0 ${
                   isActive
                     ? 'text-white border-indigo-500'
                     : 'text-gray-500 hover:text-gray-200 border-transparent'
@@ -55,7 +57,7 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
-        <main className="px-6 py-8 max-w-6xl mx-auto">
+        <main className="px-4 sm:px-6 py-6 sm:py-8 max-w-6xl mx-auto">
           <Routes>
             <Route path="/"                element={<Dashboard />} />
             <Route path="/sessions/:id"    element={<SessionDetail />} />

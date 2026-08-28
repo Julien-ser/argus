@@ -30,7 +30,7 @@ function BashInput({ p }) {
 function FilePathInput({ p, children }) {
   return (
     <div>
-      <div className="text-xs text-gray-400 font-mono mb-2 truncate">{p.file_path}</div>
+      <div className="text-xs text-gray-400 font-mono mb-2 truncate" title={p.file_path}>{p.file_path}</div>
       {children}
     </div>
   )
@@ -217,7 +217,7 @@ export default function EventRow({ event }) {
           {event.tool_name || event.type}
         </span>
         {event.flagged && (
-          <span className="text-red-400 text-xs truncate">{event.flag_reason}</span>
+          <span className="text-red-400 text-xs truncate" title={event.flag_reason}>{event.flag_reason}</span>
         )}
         {/* inline summary for common tools */}
         {!event.flagged && event.tool_input && <RowSummary event={event} />}
@@ -275,7 +275,7 @@ function RowSummary({ event }) {
       case 'Agent':     text = p.description; break
     }
     if (!text) return null
-    return <span className="text-gray-500 text-xs truncate">{text}</span>
+    return <span className="text-gray-500 text-xs truncate" title={text}>{text}</span>
   } catch {
     return null
   }

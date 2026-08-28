@@ -28,7 +28,7 @@ function SessionHeader({ sess, color, label }) {
         <StatusBadge status={sess.status} />
       </div>
       <div className="font-mono text-xs text-gray-500 mb-1">{sess.id.slice(0, 16)}…</div>
-      <div className="text-[11px] text-gray-600 font-mono truncate">{sess.project_path}</div>
+      <div className="text-[11px] text-gray-600 font-mono truncate" title={sess.project_path}>{sess.project_path}</div>
     </div>
   )
 }
@@ -124,8 +124,8 @@ export default function Compare() {
         <SessionHeader sess={sessB} color={COLORS.b} label="B" />
       </div>
 
-      <div className="mb-6">
-        <table className="w-full">
+      <div className="mb-6 overflow-x-auto">
+        <table className="w-full min-w-[520px]">
           <thead>
             <tr className="border-b border-gray-800">
               <th className="pb-3 text-left text-[11px] text-gray-600 font-medium uppercase tracking-wide" />

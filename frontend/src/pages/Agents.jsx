@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { money } from '../format.js'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
 
@@ -38,7 +39,7 @@ function AgentCard({ agent }) {
             <span>
               <span className="text-gray-300 font-medium">{agent.sessions}</span> sessions
             </span>
-            <span className="font-mono text-amber-400">${agent.total_cost_usd.toFixed(4)}</span>
+            <span className="font-mono text-amber-400">{money(agent.total_cost_usd)}</span>
           </div>
         </div>
         <span className="text-[11px] text-gray-600 font-mono shrink-0">
@@ -121,7 +122,7 @@ export default function Agents() {
       <div className="flex flex-wrap gap-8 pb-6 mb-2 border-b border-gray-800">
         <StatNum n={totalInvocations} label="invocations" />
         <StatNum n={agents.length}    label="agent types" />
-        <StatNum n={`$${totalCost.toFixed(4)}`} label="spawn cost" mono />
+        <StatNum n={money(totalCost)} label="spawn cost" mono />
         <StatNum n={totalSessions}    label="sessions" />
       </div>
 

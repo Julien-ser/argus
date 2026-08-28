@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { money } from '../format.js'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
 import CostBadge from '../components/CostBadge.jsx'
@@ -54,11 +55,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-8 pb-6 mb-8 border-b border-gray-800">
+      {/* Grid, not flex-wrap: with `gap-8` and 6 stats, a phone wrapped 5 onto
+          one line and orphaned the 6th under a wide gap. A grid keeps the
+          rows even at every width. */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-y-5 gap-x-4 sm:gap-x-8 pb-6 mb-8 border-b border-gray-800">
         <StatNum n={sessions.length} label="sessions" />
         <StatNum n={active} label="active" />
         <StatNum n={fmtTokens(totalTokens)} label="tokens" mono />
-        <StatNum n={`$${totalCost.toFixed(3)}`} label="total cost" mono />
+        <StatNum n={money(totalCost)} label="total cost" mono />
         <StatNum n={totalFlags} label="flags" warn={totalFlags > 0} />
         {avgTrust != null && (
           <StatNum n={avgTrust.toFixed(1)} label="avg trust" mono warn={avgTrust < 50} ok={avgTrust >= 80} />

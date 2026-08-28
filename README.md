@@ -53,6 +53,12 @@ Per-session trust scores broken down into Safety, Behavior, and Economy componen
 
 ![Trust Scoring](trust.png)
 
+### On a phone
+The whole dashboard works at 390px — scrolling nav, responsive stat grid, tables
+that scroll inside their own container rather than pushing the page sideways.
+
+![Mobile](mobile.png)
+
 ### Also in the UI
 - **Session Detail** — collapsible trace tree, agent → tool call hierarchy, expandable JSON input/output, live SSE feed for active sessions
 - **Project Suggestions** — LLM-enhanced optimization suggestions derived from session patterns

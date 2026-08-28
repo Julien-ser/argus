@@ -74,6 +74,30 @@ class RoutingTests(unittest.TestCase):
                 self.assertEqual(r.status_code, 404, path)
                 self.assertIn("json", r.headers.get("content-type", ""), path)
 
+    def test_readonly_instance_refuses_writes(self):
+        """The public demo runs with ARGUS_READONLY=1: anyone who finds the URL
+        must not be able to POST into the database it renders."""
+        import importlib
+        import ingest
+        os.environ["ARGUS_READONLY"] = "1"
+        try:
+            importlib.reload(ingest)
+            self.assertTrue(ingest.READONLY)
+            from fastapi.testclient import TestClient
+            import main
+            importlib.reload(main)
+            with TestClient(main.app) as client:
+                r = client.post("/ingest", json={"hook_event_name": "PreToolUse",
+                                                 "session_id": "blocked", "tool_name": "Bash"})
+                self.assertEqual(r.status_code, 403)
+                # reads still work - it is a demo, not a closed door
+                self.assertEqual(client.get("/api/health").status_code, 200)
+        finally:
+            os.environ.pop("ARGUS_READONLY", None)
+            importlib.reload(ingest)
+            import main
+            importlib.reload(main)
+
     def test_legacy_ingest_still_accepted(self):
         """Hooks installed before the /api move post here; breaking it silently
         stops collection for anyone who hasn't re-run the installer."""

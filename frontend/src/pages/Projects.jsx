@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
+import { money, tokens as fmtTokens } from '../format.js'
 import TrustBadge from '../components/TrustBadge.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 
@@ -14,7 +15,7 @@ function SkillPill({ name }) {
 
 function ProjectCard({ project }) {
   const detailUrl = `/projects/detail?${new URLSearchParams({ path: project.project_path })}`
-  const tokens = (project.total_input_tokens || 0) + (project.total_output_tokens || 0)
+  const tokenTotal = (project.total_input_tokens || 0) + (project.total_output_tokens || 0)
 
   return (
     <div className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors bg-gray-900/40">
@@ -23,10 +24,11 @@ function ProjectCard({ project }) {
           <Link
             to={detailUrl}
             className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm block truncate"
+            title={project.project_name}
           >
             {project.project_name}
           </Link>
-          <div className="text-gray-700 text-[11px] font-mono truncate mt-0.5">
+          <div className="text-gray-700 text-[11px] font-mono truncate mt-0.5" title={project.project_path}>
             {project.project_path}
           </div>
         </div>
@@ -36,25 +38,27 @@ function ProjectCard({ project }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-3 text-center">
-        <div>
-          <div className="text-base font-semibold tabular-nums">{project.session_count}</div>
+      {/* min-w-0 on every cell: without it a wide value renders past its own
+          column and collides with the next one ($3.258 + 630.8k read as one
+          number). Values are formatted narrower now, but the constraint is what
+          makes the layout actually safe. */}
+      <div className="grid grid-cols-4 gap-x-2 mb-3 text-center">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold tabular-nums">{project.session_count}</div>
           <div className="text-[11px] text-gray-600 mt-0.5">sessions</div>
         </div>
-        <div>
-          <div className="text-base font-semibold font-mono tabular-nums">
-            ${(project.total_cost_usd || 0).toFixed(3)}
+        <div className="min-w-0">
+          <div className="text-sm font-semibold font-mono tabular-nums">
+            {money(project.total_cost_usd)}
           </div>
           <div className="text-[11px] text-gray-600 mt-0.5">cost</div>
         </div>
-        <div>
-          <div className="text-base font-semibold tabular-nums">
-            {tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : tokens}
-          </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold tabular-nums">{fmtTokens(tokenTotal)}</div>
           <div className="text-[11px] text-gray-600 mt-0.5">tokens</div>
         </div>
-        <div>
-          <div className={`text-base font-semibold tabular-nums ${project.flag_count > 0 ? 'text-red-400' : 'text-gray-600'}`}>
+        <div className="min-w-0">
+          <div className={`text-sm font-semibold tabular-nums ${project.flag_count > 0 ? 'text-red-400' : 'text-gray-600'}`}>
             {project.flag_count}
           </div>
           <div className="text-[11px] text-gray-600 mt-0.5">flags</div>
