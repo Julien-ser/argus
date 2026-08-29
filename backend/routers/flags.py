@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from database import get_session
+from ingest import SEVERITY_RANK
 from models import Event
 from models import Session as SessionModel
 
@@ -15,9 +18,18 @@ def list_flags(db: Session = Depends(get_session)) -> list[dict]:
     Each entry includes the event fields plus project_path and session_status
     from the parent session.
     """
-    flagged = db.exec(
-        select(Event).where(Event.flagged).order_by(Event.timestamp.desc())
-    ).all()
+    # Worst first, then newest. Ordering purely by time buries a critical
+    # pipe-to-shell detection under whatever cost warnings happened to fire most
+    # recently — which is backwards for an alert feed, and it is the first screen
+    # anyone looks at. SQLite has no ordering for our severity words, so the rank
+    # is applied in Python.
+    flagged = db.exec(select(Event).where(Event.flagged)).all()
+    flagged = sorted(
+        flagged,
+        key=lambda e: (SEVERITY_RANK.get((e.severity or "").lower(), -1),
+                       e.timestamp or datetime.min),
+        reverse=True,
+    )
 
     result = []
     for event in flagged:

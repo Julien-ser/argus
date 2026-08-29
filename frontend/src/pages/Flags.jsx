@@ -9,6 +9,16 @@ function severity(flag) {
   return (flag.severity || 'info').toLowerCase()
 }
 
+// An event with no tool (a session-level cost flag, a compaction) fell back to
+// the raw type string, so the feed showed "tool_result" as a heading.
+const TYPE_LABELS = {
+  tool_result: 'Session',
+  tool_call: 'Session',
+  subagent_spawn: 'Subagent',
+  compaction: 'Compaction',
+  error: 'Error',
+}
+
 const SEV = {
   critical: { border: 'border-l-red-500',    label: 'text-red-400' },
   high:     { border: 'border-l-orange-500', label: 'text-orange-400' },
@@ -68,7 +78,7 @@ export default function Flags() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-sm font-medium text-gray-200">
-                        {flag.tool_name || flag.type}
+                        {flag.tool_name || TYPE_LABELS[flag.type] || flag.type}
                       </span>
                     </div>
                     <div className="text-sm text-gray-400 mb-2">{flag.flag_reason}</div>
