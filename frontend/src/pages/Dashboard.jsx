@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react'
-import { money } from '../format.js'
+import { money, tokens as fmtTokens } from '../format.js'
 import { Link } from 'react-router-dom'
 import { API } from '../App.jsx'
 import CostBadge from '../components/CostBadge.jsx'
 import FlagBadge from '../components/FlagBadge.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
-
-function fmtTokens(n) {
-  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`
-  if (n >= 1e3) return `${Math.round(n / 1e3)}k`
-  return String(n)
-}
 
 function StatNum({ n, label, mono, warn, ok }) {
   const cls = warn ? 'text-red-400' : ok ? 'text-green-400' : 'text-white'
@@ -76,16 +70,18 @@ export default function Dashboard() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            {/* Project takes the slack (w-full on its header);
+                every other column sizes to content and keeps its padding. */}
             <thead>
               <tr className="border-b border-gray-800">
-                <th className={`${TH} text-left`}>Project</th>
-                <th className={`${TH} text-left`}>Status</th>
-                <th className={`${TH} text-right`}>Trust</th>
-                <th className={`${TH} text-right`}>Events</th>
-                <th className={`${TH} text-right`}>Tokens</th>
-                <th className={`${TH} text-right`}>Cost</th>
-                <th className={`${TH} text-right`}>Flags</th>
-                <th className={`${TH} text-left pl-4`}>Started</th>
+                <th className={`${TH} w-full text-left`}>Project</th>
+                <th className={`${TH} text-left whitespace-nowrap px-3`}>Status</th>
+                <th className={`${TH} text-right whitespace-nowrap px-3`}>Trust</th>
+                <th className={`${TH} text-right whitespace-nowrap px-3`}>Events</th>
+                <th className={`${TH} text-right whitespace-nowrap px-3`}>Tokens</th>
+                <th className={`${TH} text-right whitespace-nowrap px-3`}>Cost</th>
+                <th className={`${TH} text-right whitespace-nowrap px-3`}>Flags</th>
+                <th className={`${TH} whitespace-nowrap pl-4 text-left`}>Started</th>
               </tr>
             </thead>
             <tbody>
@@ -95,11 +91,11 @@ export default function Dashboard() {
                   : s.id.slice(0, 8)
                 return (
                   <tr key={s.id} className="border-b border-gray-800/50 hover:bg-gray-900/50 transition-colors">
-                    <td className="py-3 pr-6">
+                    <td className="py-3 pr-6 align-top">
                       <Link to={`/sessions/${s.id}`} className="text-indigo-400 hover:text-indigo-300 font-medium">
                         {name}
                       </Link>
-                      <div className="text-gray-600 text-[11px] font-mono truncate max-w-xs mt-0.5">
+                      <div className="mt-0.5 max-w-xs truncate font-mono text-[11px] text-gray-500" title={s.project_path}>
                         {s.project_path}
                       </div>
                       {s.skill_counts?.length > 0 && (
@@ -111,18 +107,18 @@ export default function Dashboard() {
                         </div>
                       )}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 px-3 align-top whitespace-nowrap">
                       <StatusBadge status={s.status} />
                     </td>
-                    <td className="py-3 text-right"><TrustBadge score={s.trust_score} /></td>
-                    <td className="py-3 text-right text-gray-400 tabular-nums">{s.event_count}</td>
-                    <td className="py-3 text-right text-gray-500 text-xs font-mono tabular-nums">
+                    <td className="py-3 px-3 text-right align-top"><TrustBadge score={s.trust_score} /></td>
+                    <td className="py-3 px-3 text-right align-top text-gray-400 tabular-nums">{s.event_count}</td>
+                    <td className="py-3 px-3 text-right align-top text-gray-500 text-xs font-mono tabular-nums">
                       {fmtTokens((s.total_input_tokens || 0) + (s.total_output_tokens || 0))}
                     </td>
-                    <td className="py-3 text-right"><CostBadge cost={s.total_cost_usd} /></td>
-                    <td className="py-3 text-right"><FlagBadge count={s.flag_count} /></td>
-                    <td className="py-3 pl-4 text-gray-600 text-[11px] font-mono tabular-nums">
-                      {new Date(s.started_at).toLocaleString()}
+                    <td className="py-3 px-3 text-right align-top"><CostBadge cost={s.total_cost_usd} /></td>
+                    <td className="py-3 px-3 text-right align-top"><FlagBadge count={s.flag_count} /></td>
+                    <td className="py-3 pl-4 align-top whitespace-nowrap text-gray-600 text-[11px] font-mono tabular-nums">
+                      {new Date(s.started_at).toLocaleDateString()}
                     </td>
                   </tr>
                 )
